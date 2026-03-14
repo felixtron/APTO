@@ -37,6 +37,9 @@ COPY --from=builder /app/public ./public
 # Copy Prisma schema for migrations
 COPY --from=builder /app/prisma ./prisma
 
+# Create cache directory with correct permissions
+RUN mkdir -p .next/cache && chown -R nextjs:nodejs .next/cache
+
 USER nextjs
 
 EXPOSE 3000
