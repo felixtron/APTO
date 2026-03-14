@@ -1,0 +1,260 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getStripeForMode, getStripeWebhookSecret } from "@/lib/stripe";
+import type { StripeMode } from "@/lib/stripe";
+import { prisma } from "@/lib/prisma";
+import { generateCertificateId } from "@/lib/generate-certificate";
+import { sendEventConfirmationEmail } from "@/lib/emails";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import type Stripe from "stripe";
+
+export async function POST(request: NextRequest) {
+  const body = await request.text();
+  const signature = request.headers.get("stripe-signature");
+
+  if (!signature) {
+    return NextResponse.json(
+      { error: "Missing stripe-signature header" },
+      { status: 400 }
+    );
+  }
+
+  // Try to verify with both modes — webhooks can come from either
+  let event: Stripe.Event | undefined;
+  for (const mode of ["live", "test"] as StripeMode[]) {
+    const secret =
+      mode === "live"
+        ? process.env.STRIPE_LIVE_WEBHOOK_SECRET
+        : process.env.STRIPE_TEST_WEBHOOK_SECRET;
+    if (!secret) continue;
+    try {
+      const stripe = getStripeForMode(mode);
+      event = stripe.webhooks.constructEvent(body, signature, secret);
+      break;
+    } catch {
+      // Try next mode
+    }
+  }
+
+  if (!event) {
+    console.error("Webhook signature verification failed for all modes");
+    return NextResponse.json(
+      { error: "Webhook signature verification failed" },
+      { status: 400 }
+    );
+  }
+
+  switch (event.type) {
+    case "checkout.session.completed": {
+      const session = event.data.object;
+      const memberId = session.metadata?.memberId;
+      const eventRegistrationId = session.metadata?.eventRegistrationId;
+
+      if (memberId) {
+        await handleMembershipCheckout(session, memberId);
+      } else if (eventRegistrationId) {
+        await handleEventRegistration(session, eventRegistrationId);
+      }
+      break;
+    }
+
+    case "customer.subscription.updated": {
+      await handleSubscriptionUpdate(event.data.object as never);
+      break;
+    }
+
+    case "customer.subscription.deleted": {
+      await handleSubscriptionDeleted(event.data.object as never);
+      break;
+    }
+
+    case "invoice.payment_succeeded": {
+      await handleInvoicePaid(event.data.object as never);
+      break;
+    }
+
+    case "invoice.payment_failed": {
+      const invoice = event.data.object;
+      console.error(`Payment failed for invoice ${invoice.id}`);
+      break;
+    }
+  }
+
+  return NextResponse.json({ received: true });
+}
+
+async function handleMembershipCheckout(
+  session: Stripe.Checkout.Session,
+  memberId: string
+) {
+  const member = await prisma.member.findUnique({ where: { id: memberId } });
+  if (!member || member.status === "ACTIVE") return;
+
+  const customerId =
+    typeof session.customer === "string"
+      ? session.customer
+      : session.customer?.id ?? null;
+  const subscriptionId =
+    typeof session.subscription === "string"
+      ? session.subscription
+      : session.subscription?.id ?? null;
+
+  await prisma.member.update({
+    where: { id: memberId },
+    data: {
+      status: "ACTIVE",
+      stripeCustomerId: customerId,
+      subscriptionId: subscriptionId,
+    },
+  });
+
+  // Auto-create membership certificate
+  await createMembershipCertificate(memberId);
+}
+
+async function handleEventRegistration(
+  session: Stripe.Checkout.Session,
+  registrationId: string
+) {
+  const registration = await prisma.eventRegistration.findUnique({
+    where: { id: registrationId },
+  });
+  if (!registration || registration.status === "CONFIRMED") return;
+
+  const paymentIntent =
+    typeof session.payment_intent === "string"
+      ? session.payment_intent
+      : session.payment_intent?.id ?? null;
+
+  await prisma.eventRegistration.update({
+    where: { id: registrationId },
+    data: {
+      status: "CONFIRMED",
+      stripePaymentId: paymentIntent,
+      amountPaid: session.amount_total || 0,
+    },
+  });
+
+  // Fire-and-forget: send event confirmation email
+  const event = await prisma.event.findUnique({
+    where: { id: registration.eventId },
+  });
+  if (event) {
+    const eventDate = format(event.scheduledAt, "d 'de' MMMM 'de' yyyy, HH:mm", {
+      locale: es,
+    });
+    sendEventConfirmationEmail({
+      name: registration.name,
+      email: registration.email,
+      eventTitle: event.title,
+      eventDate,
+      eventLocation: event.location,
+      eventModality: event.modality,
+      meetLink: event.meetLink,
+    }).catch(console.error);
+  }
+}
+
+async function handleSubscriptionUpdate(
+  subscription: Record<string, unknown>
+) {
+  const subId = subscription.id as string;
+  const member = await prisma.member.findFirst({
+    where: { subscriptionId: subId },
+  });
+  if (!member) return;
+
+  const periodEnd = (subscription.current_period_end as number) || null;
+
+  await prisma.member.update({
+    where: { id: member.id },
+    data: {
+      status: subscription.status === "active" ? "ACTIVE" : "EXPIRED",
+      ...(periodEnd
+        ? { subscriptionEnd: new Date(periodEnd * 1000) }
+        : {}),
+    },
+  });
+}
+
+async function handleSubscriptionDeleted(
+  subscription: Record<string, unknown>
+) {
+  const subId = subscription.id as string;
+  const member = await prisma.member.findFirst({
+    where: { subscriptionId: subId },
+  });
+  if (!member) return;
+
+  await prisma.member.update({
+    where: { id: member.id },
+    data: {
+      status: "CANCELLED",
+      subscriptionId: null,
+    },
+  });
+}
+
+async function handleInvoicePaid(
+  invoice: Record<string, unknown>
+) {
+  const subscription = invoice.subscription;
+  const subscriptionId =
+    typeof subscription === "string"
+      ? subscription
+      : (subscription as Record<string, unknown> | null)?.id as string | undefined;
+  if (!subscriptionId) return;
+
+  const member = await prisma.member.findFirst({
+    where: { subscriptionId },
+  });
+  if (!member) return;
+
+  const lines = invoice.lines as { data?: Array<{ period?: { end?: number } }> } | undefined;
+  const periodEnd = lines?.data?.[0]?.period?.end;
+  if (periodEnd) {
+    await prisma.member.update({
+      where: { id: member.id },
+      data: {
+        status: "ACTIVE",
+        subscriptionEnd: new Date(periodEnd * 1000),
+      },
+    });
+
+    // Auto-create/update certificate for the new period
+    await createMembershipCertificate(member.id);
+  }
+}
+
+async function createMembershipCertificate(memberId: string) {
+  const year = new Date().getFullYear();
+  const type = "membership";
+
+  // Check if certificate already exists for this member/type/year
+  const existing = await prisma.certificate.findUnique({
+    where: { memberId_type_year: { memberId, type, year } },
+  });
+
+  if (existing) return; // Already has a certificate for this period
+
+  // Generate sequential folio
+  const count = await prisma.certificate.count({
+    where: { year },
+  });
+  const certificateId = await generateCertificateId(year, count);
+
+  // Expiry = end of membership year
+  const expiresAt = new Date(year, 11, 31, 23, 59, 59); // Dec 31
+
+  await prisma.certificate.create({
+    data: {
+      memberId,
+      certificateId,
+      type,
+      year,
+      status: "ACTIVE",
+      issuedAt: new Date(),
+      expiresAt,
+    },
+  });
+}

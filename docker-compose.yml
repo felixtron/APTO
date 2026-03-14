@@ -1,0 +1,78 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: apto
+      POSTGRES_USER: apto
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U apto -d apto"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://apto:${DB_PASSWORD}@db:5432/apto
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      NEXT_PUBLIC_APP_URL: https://${APP_DOMAIN:-apto.prosuite.pro}
+      NEXTAUTH_URL: https://${APP_DOMAIN:-apto.prosuite.pro}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      CERTIFICATE_SECRET: ${CERTIFICATE_SECRET:-}
+      CRON_SECRET: ${CRON_SECRET:-}
+
+      # Stripe
+      STRIPE_MODE: ${STRIPE_MODE:-test}
+      STRIPE_LIVE_SECRET_KEY: ${STRIPE_LIVE_SECRET_KEY:-}
+      STRIPE_LIVE_WEBHOOK_SECRET: ${STRIPE_LIVE_WEBHOOK_SECRET:-}
+      STRIPE_LIVE_PUBLISHABLE_KEY: ${STRIPE_LIVE_PUBLISHABLE_KEY:-}
+      STRIPE_TEST_SECRET_KEY: ${STRIPE_TEST_SECRET_KEY:-}
+      STRIPE_TEST_WEBHOOK_SECRET: ${STRIPE_TEST_WEBHOOK_SECRET:-}
+      STRIPE_TEST_PUBLISHABLE_KEY: ${STRIPE_TEST_PUBLISHABLE_KEY:-}
+
+      # Email
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM: ${RESEND_FROM:-APTO <contacto@apto.org.mx>}
+
+      # AI
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+
+      # Storage
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+      R2_BUCKET_NAME: ${R2_BUCKET_NAME:-}
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:-}
+      R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
+    networks:
+      - internal
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.apto.rule=Host(`${APP_DOMAIN:-apto.prosuite.pro}`)"
+      - "traefik.http.routers.apto.entrypoints=websecure"
+      - "traefik.http.routers.apto.tls.certresolver=letsencrypt"
+      - "traefik.http.services.apto.loadbalancer.server.port=3000"
+      - "traefik.http.routers.apto-http.rule=Host(`${APP_DOMAIN:-apto.prosuite.pro}`)"
+      - "traefik.http.routers.apto-http.entrypoints=web"
+      - "traefik.http.routers.apto-http.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+
+volumes:
+  postgres_data:
+
+networks:
+  internal:
+  dokploy-network:
+    external: true

@@ -1,0 +1,318 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ═══════════════════════════════════════
+// MIEMBROS
+// ═══════════════════════════════════════
+
+model Member {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  passwordHash String
+  name         String
+  phone        String?
+  memberNumber String?      @unique
+  type         MemberType   @default(PROFESSIONAL)
+  status       MemberStatus @default(PENDING)
+  institution  String?
+  cedula       String?
+  specialty    String?
+
+  // Stripe
+  stripeCustomerId String? @unique
+  subscriptionId   String? @unique
+  subscriptionEnd  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  certificates       Certificate[]
+  eventRegistrations EventRegistration[]
+
+  @@index([status])
+}
+
+enum MemberType {
+  PROFESSIONAL
+}
+
+enum MemberStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+// ═══════════════════════════════════════
+// NOTICIAS / BLOG
+// ═══════════════════════════════════════
+
+model Post {
+  id         String       @id @default(cuid())
+  title      String
+  slug       String       @unique
+  excerpt    String
+  content    String
+  coverImage String?
+  category   PostCategory @default(NOTICIAS)
+  published  Boolean      @default(false)
+  featured   Boolean      @default(false)
+  source     PostSource   @default(MANUAL)
+
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([published, publishedAt])
+  @@index([category])
+}
+
+enum PostCategory {
+  NOTICIAS
+  EVENTOS
+  CLASIFICADOS
+}
+
+enum PostSource {
+  MANUAL
+  AI_CURATED
+}
+
+// ═══════════════════════════════════════
+// EVENTOS
+// ═══════════════════════════════════════
+
+model Event {
+  id          String        @id @default(cuid())
+  title       String
+  slug        String        @unique
+  description String
+  coverImage  String?
+  scheduledAt DateTime
+  endAt       DateTime?
+  modality    EventModality @default(VIRTUAL)
+  location    String?
+  meetLink    String?
+  price       Int           @default(0) // Centavos MXN (0 = gratis)
+  maxCapacity Int?
+  active      Boolean       @default(true)
+
+  stripePriceId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  registrations EventRegistration[]
+
+  @@index([scheduledAt, active])
+}
+
+enum EventModality {
+  VIRTUAL
+  IN_PERSON
+  HYBRID
+}
+
+model EventRegistration {
+  id       String             @id @default(cuid())
+  eventId  String
+  memberId String?
+  name     String
+  email    String
+  phone    String?
+  status   RegistrationStatus @default(PENDING)
+
+  stripeSessionId String? @unique
+  stripePaymentId String? @unique
+  amountPaid      Int     @default(0)
+
+  createdAt DateTime @default(now())
+
+  event  Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  member Member? @relation(fields: [memberId], references: [id])
+
+  @@index([eventId, status])
+}
+
+enum RegistrationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  EXPIRED
+}
+
+// ═══════════════════════════════════════
+// BOLSA DE TRABAJO
+// ═══════════════════════════════════════
+
+model JobPosting {
+  id           String  @id @default(cuid())
+  title        String
+  company      String
+  location     String
+  type         JobType @default(FULL_TIME)
+  description  String
+  requirements String?
+  salary       String?
+  contactEmail String
+  contactPhone String?
+  active       Boolean @default(true)
+  membersOnly  Boolean @default(false)
+
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active, expiresAt])
+}
+
+enum JobType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  FREELANCE
+}
+
+// ═══════════════════════════════════════
+// CONSTANCIAS / CERTIFICADOS
+// ═══════════════════════════════════════
+
+model Certificate {
+  id            String     @id @default(cuid())
+  memberId      String
+  certificateId String     @unique // Folio: "APTO-2025-0001"
+  type          String     // "membership", "congress"
+  year          Int
+  sha256Hash    String?    // Hash del PDF generado
+  status        CertStatus @default(ACTIVE)
+
+  issuedAt      DateTime   @default(now())
+  expiresAt     DateTime?
+  revokedAt     DateTime?
+  revokedReason String?
+
+  member Member @relation(fields: [memberId], references: [id])
+
+  @@unique([memberId, type, year])
+  @@index([certificateId])
+  @@index([status])
+}
+
+enum CertStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
+}
+
+// ═══════════════════════════════════════
+// UNIVERSIDADES
+// ═══════════════════════════════════════
+
+model University {
+  id           String   @id @default(cuid())
+  name         String
+  shortName    String?
+  description  String?
+  degrees      String[] // ["Licenciatura", "Maestría"]
+  location     String
+  website      String?
+  logoUrl      String?
+  active       Boolean  @default(true)
+  displayOrder Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ═══════════════════════════════════════
+// RECURSOS
+// ═══════════════════════════════════════
+
+model Resource {
+  id           String       @id @default(cuid())
+  title        String
+  description  String
+  type         ResourceType @default(PDF)
+  fileUrl      String?
+  externalUrl  String?
+  thumbnailUrl String?
+  membersOnly  Boolean      @default(false)
+  active       Boolean      @default(true)
+  displayOrder Int          @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum ResourceType {
+  PDF
+  VIDEO
+  LINK
+  DOCUMENT
+}
+
+// ═══════════════════════════════════════
+// GRABACIONES (contenido exclusivo)
+// ═══════════════════════════════════════
+
+model Recording {
+  id           String  @id @default(cuid())
+  title        String
+  description  String?
+  videoUrl     String
+  thumbnailUrl String?
+  duration     Int? // Minutos
+  eventTitle   String?
+  category     String?
+  active       Boolean @default(true)
+  displayOrder Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ═══════════════════════════════════════
+// MESA DIRECTIVA
+// ═══════════════════════════════════════
+
+model BoardMember {
+  id           String  @id @default(cuid())
+  name         String
+  title        String // "Presidenta", "Secretaria"
+  role         String? // "Delegada ante WFOT"
+  bio          String
+  photoUrl     String?
+  displayOrder Int     @default(0)
+  active       Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ═══════════════════════════════════════
+// NEWSLETTER
+// ═══════════════════════════════════════
+
+model Newsletter {
+  id             String           @id @default(cuid())
+  subject        String
+  content        String
+  status         NewsletterStatus @default(DRAFT)
+  sentAt         DateTime?
+  recipientCount Int              @default(0)
+
+  createdAt DateTime @default(now())
+}
+
+enum NewsletterStatus {
+  DRAFT
+  SCHEDULED
+  SENT
+  FAILED
+}

@@ -1,0 +1,82 @@
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { generateCertificatePdf } from "@/lib/generate-certificate";
+
+export async function GET(request: NextRequest) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const certId = searchParams.get("id");
+
+  if (!certId) {
+    return NextResponse.json(
+      { error: "Certificate ID required" },
+      { status: 400 }
+    );
+  }
+
+  const certificate = await prisma.certificate.findUnique({
+    where: { id: certId },
+    include: { member: true },
+  });
+
+  if (!certificate || certificate.memberId !== session.user.id) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  if (certificate.status !== "ACTIVE") {
+    return NextResponse.json(
+      { error: "Certificate is not active" },
+      { status: 403 }
+    );
+  }
+
+  const member = certificate.member;
+
+  if (!member.memberNumber) {
+    return NextResponse.json(
+      { error: "No member number assigned" },
+      { status: 400 }
+    );
+  }
+
+  const president = await prisma.boardMember.findFirst({
+    where: {
+      active: true,
+      title: { contains: "Presidente", mode: "insensitive" },
+    },
+    orderBy: { displayOrder: "asc" },
+  });
+
+  const periodStart = member.createdAt;
+  const periodEnd = member.subscriptionEnd ?? new Date();
+
+  const { pdfBytes, sha256Hash } = await generateCertificatePdf({
+    memberName: member.name,
+    memberNumber: member.memberNumber,
+    certificateId: certificate.certificateId,
+    periodStart,
+    periodEnd,
+    presidentName: president?.name ?? "Mesa Directiva APTO",
+  });
+
+  // Store hash if not already set
+  if (!certificate.sha256Hash) {
+    await prisma.certificate.update({
+      where: { id: certId },
+      data: { sha256Hash },
+    });
+  }
+
+  return new NextResponse(Buffer.from(pdfBytes), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `inline; filename="Constancia_${certificate.certificateId}.pdf"`,
+    },
+  });
+}
