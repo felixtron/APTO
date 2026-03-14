@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { Award, Globe, Heart, Users } from "lucide-react";
 import { FOUNDED_YEAR, CLATO_MEMBER_SINCE } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";

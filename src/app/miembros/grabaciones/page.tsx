@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { prisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui/badge";
 import { Play, Clock } from "lucide-react";
