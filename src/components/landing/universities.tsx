@@ -15,8 +15,8 @@ const universityLogos = [
 export function Universities() {
   return (
     <LogoCarousel
-      title="Universidades Avaladas"
-      subtitle="Instituciones educativas reconocidas por APTO"
+      title="Instituciones Educativas"
+      subtitle="Donde puedes estudiar Terapia Ocupacional"
       logos={universityLogos}
     />
   );

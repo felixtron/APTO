@@ -37,7 +37,7 @@ export function Hero() {
               variant="outline"
               size="lg"
               render={<Link href="/nosotros" />}
-              className="border-white/40 text-white hover:bg-white/10 backdrop-blur-sm"
+              className="border-white text-white hover:bg-white/20 backdrop-blur-sm"
             >
               Conoce m&aacute;s
             </Button>

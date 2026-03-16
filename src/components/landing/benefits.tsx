@@ -22,9 +22,9 @@ const benefits = [
   },
   {
     icon: Newspaper,
-    title: "Boletín WFOT & DMCN",
+    title: "Boletín WFOT",
     description:
-      "Recibe el boletín de la Federación Mundial y un artículo científico mensual de la revista DMCN.",
+      "Recibe el boletín de la Federación Mundial de Terapeutas Ocupacionales con novedades internacionales.",
   },
   {
     icon: Briefcase,

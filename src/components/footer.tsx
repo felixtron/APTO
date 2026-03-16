@@ -32,7 +32,7 @@ const resourceLinks = [
 
 export function Footer() {
   return (
-    <footer className="border-t bg-foreground text-white">
+    <footer className="border-t text-white" style={{ backgroundColor: "#0E2A42" }}>
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {/* Logo & Social */}
@@ -42,7 +42,7 @@ export function Footer() {
               alt="APTO"
               width={160}
               height={55}
-              className="h-12 w-auto brightness-0 invert"
+              className="h-12 w-auto"
             />
             <p className="text-sm text-white/60">
               Impulsando la Terapia Ocupacional en México desde 1993.

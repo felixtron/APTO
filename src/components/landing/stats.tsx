@@ -1,7 +1,7 @@
 const stats = [
   { value: "30+", label: "Años de trayectoria" },
   { value: "14", label: "Países CLATO" },
-  { value: "9", label: "Universidades avaladas" },
+  { value: "9", label: "Instituciones educativas" },
   { value: "200+", label: "Miembros activos" },
 ];
 

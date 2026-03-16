@@ -10,9 +10,27 @@ const features = [
   "Bolsa de trabajo exclusiva",
   "Aval profesional APTO",
   "Participación activa en CLATO",
-  "Artículo científico DMCN mensual",
+  "Boletín WFOT internacional",
   "Becas y descuentos en formación",
   "Grupos y comisiones de trabajo",
+];
+
+const plans = [
+  {
+    name: "Estudiante",
+    price: "$300",
+    period: "MXN / año",
+    description: "Para estudiantes de Terapia Ocupacional",
+    highlight: false,
+  },
+  {
+    name: "Profesional",
+    price: "$800",
+    period: "MXN / año",
+    description: "Para Terapeutas Ocupacionales titulados",
+    highlight: true,
+    badge: "Más popular",
+  },
 ];
 
 const faqs = [
@@ -30,7 +48,7 @@ const faqs = [
   },
   {
     q: "¿Pueden inscribirse estudiantes?",
-    a: "Sí, la membresía está abierta tanto a profesionales titulados como a estudiantes de Terapia Ocupacional.",
+    a: "Sí, la membresía está abierta tanto a profesionales titulados como a estudiantes de Terapia Ocupacional. Los estudiantes cuentan con una tarifa preferencial de $300 MXN al año.",
   },
 ];
 
@@ -51,43 +69,58 @@ export default function MembresiaPage() {
         </div>
       </section>
 
-      {/* Plan */}
+      {/* Plans */}
       <section className="bg-white">
-        <div className="mx-auto max-w-lg px-4 py-12 sm:px-6 lg:px-8">
-          <div className="relative rounded-2xl border border-brand-500 p-8 shadow-lg ring-1 ring-brand-500">
-            <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-brand-500 px-4 py-1 text-xs font-semibold text-white">
-              Membresía APTO
-            </span>
-            <div className="text-center">
-              <div className="mt-4">
-                <span className="text-5xl font-bold">$800</span>
-                <span className="ml-1 text-sm text-muted-foreground">
-                  MXN / año
-                </span>
-              </div>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Para Terapeutas Ocupacionales titulados y en formación
-              </p>
-            </div>
-            <ul className="mt-8 space-y-3">
-              {features.map((feature) => (
-                <li
-                  key={feature}
-                  className="flex items-start gap-2 text-sm"
+        <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
+          <div className="grid gap-8 sm:grid-cols-2">
+            {plans.map((plan) => (
+              <div
+                key={plan.name}
+                className={`relative rounded-2xl p-8 shadow-lg ${
+                  plan.highlight
+                    ? "border-2 border-brand-500 ring-1 ring-brand-500"
+                    : "border border-muted"
+                }`}
+              >
+                {plan.badge && (
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-brand-500 px-4 py-1 text-xs font-semibold text-white">
+                    {plan.badge}
+                  </span>
+                )}
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold">{plan.name}</h3>
+                  <div className="mt-4">
+                    <span className="text-5xl font-bold">{plan.price}</span>
+                    <span className="ml-1 text-sm text-muted-foreground">
+                      {plan.period}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {plan.description}
+                  </p>
+                </div>
+                <ul className="mt-8 space-y-3">
+                  {features.map((feature) => (
+                    <li
+                      key={feature}
+                      className="flex items-start gap-2 text-sm"
+                    >
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Button
+                  className="mt-8 w-full"
+                  size="lg"
+                  variant={plan.highlight ? "default" : "outline"}
+                  render={<Link href="/auth/registro" />}
                 >
-                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
-                  <span>{feature}</span>
-                </li>
-              ))}
-            </ul>
-            <Button
-              className="mt-8 w-full"
-              size="lg"
-              render={<Link href="/auth/registro" />}
-            >
-              Inscribirse
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+                  Inscribirse
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            ))}
           </div>
         </div>
       </section>
