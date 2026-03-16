@@ -27,9 +27,8 @@ export function CtaFinal() {
             </Button>
             <Button
               size="lg"
-              variant="outline"
-              className="border-white text-white hover:bg-white/20"
               render={<Link href="/contacto" />}
+              className="!border-white !text-white !bg-transparent hover:!bg-white/20"
             >
               Contáctanos
             </Button>

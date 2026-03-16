@@ -34,10 +34,9 @@ export function Hero() {
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
             <Button
-              variant="outline"
               size="lg"
               render={<Link href="/nosotros" />}
-              className="border-white text-white hover:bg-white/20 backdrop-blur-sm"
+              className="!border-white !text-white !bg-transparent hover:!bg-white/20 backdrop-blur-sm"
             >
               Conoce m&aacute;s
             </Button>

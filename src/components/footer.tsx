@@ -37,13 +37,15 @@ export function Footer() {
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {/* Logo & Social */}
           <div className="space-y-4">
-            <Image
-              src="/logo/Logomain.png"
-              alt="APTO"
-              width={160}
-              height={55}
-              className="h-12 w-auto"
-            />
+            <div className="inline-block rounded-lg bg-white p-2">
+              <Image
+                src="/logo/logoAPTO.png"
+                alt="APTO"
+                width={160}
+                height={55}
+                className="h-10 w-auto"
+              />
+            </div>
             <p className="text-sm text-white/60">
               Impulsando la Terapia Ocupacional en México desde 1993.
             </p>
