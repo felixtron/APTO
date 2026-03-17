@@ -14,6 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ImageUpload } from "@/components/admin/image-upload";
 
 interface Event {
   id: string;
@@ -44,6 +45,7 @@ const modalityLabels: Record<string, string> = {
 const emptyForm = {
   title: "",
   description: "",
+  coverImage: null as string | null,
   scheduledAt: "",
   modality: "VIRTUAL",
   location: "",
@@ -84,6 +86,7 @@ export default function AdminEventosPage() {
     setForm({
       title: event.title,
       description: event.description,
+      coverImage: event.coverImage,
       scheduledAt: event.scheduledAt
         ? new Date(event.scheduledAt).toISOString().slice(0, 16)
         : "",
@@ -117,6 +120,7 @@ export default function AdminEventosPage() {
     const payload = {
       title: form.title,
       description: form.description,
+      coverImage: form.coverImage,
       scheduledAt: form.scheduledAt,
       modality: form.modality,
       location: form.location || null,
@@ -186,6 +190,18 @@ export default function AdminEventosPage() {
                 placeholder="Título del evento"
                 className="mt-1"
               />
+            </div>
+            <div className="sm:col-span-2">
+              <Label>Imagen del evento (16:9)</Label>
+              <div className="mt-1">
+                <ImageUpload
+                  value={form.coverImage}
+                  onChange={(url) => setForm({ ...form, coverImage: url })}
+                  folder="eventos"
+                  aspectRatio="16/9"
+                  placeholder="Arrastra la imagen del evento o haz clic para seleccionar"
+                />
+              </div>
             </div>
             <div className="sm:col-span-2">
               <Label htmlFor="description">Descripción</Label>
