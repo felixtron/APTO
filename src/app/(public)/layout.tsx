@@ -7,10 +7,15 @@ export default async function PublicLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const specialEvent = await prisma.specialEvent.findFirst({
-    where: { active: true },
-    select: { slug: true, navLabel: true },
-  });
+  let specialEvent: { slug: string; navLabel: string } | null = null;
+  try {
+    specialEvent = await prisma.specialEvent.findFirst({
+      where: { active: true },
+      select: { slug: true, navLabel: true },
+    });
+  } catch {
+    // Table may not exist yet during build
+  }
 
   return (
     <>
