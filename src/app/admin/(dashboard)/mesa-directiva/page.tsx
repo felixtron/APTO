@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ImageUpload } from "@/components/admin/image-upload";
 import { Plus, Users, GripVertical, Pencil, Trash2, X } from "lucide-react";
+import Image from "next/image";
 
 interface BoardMember {
   id: string;
@@ -12,10 +14,11 @@ interface BoardMember {
   title: string;
   role: string | null;
   bio: string;
+  photoUrl: string | null;
   displayOrder: number;
 }
 
-const emptyForm = { name: "", title: "", role: "", bio: "" };
+const emptyForm = { name: "", title: "", role: "", bio: "", photoUrl: null as string | null };
 
 export default function AdminMesaDirectivaPage() {
   const [members, setMembers] = useState<BoardMember[]>([]);
@@ -48,6 +51,7 @@ export default function AdminMesaDirectivaPage() {
       title: member.title,
       role: member.role || "",
       bio: member.bio,
+      photoUrl: member.photoUrl,
     });
     setEditingId(member.id);
     setShowForm(true);
@@ -115,6 +119,18 @@ export default function AdminMesaDirectivaPage() {
             </Button>
           </div>
           <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <Label>Foto</Label>
+              <div className="mt-1 max-w-xs">
+                <ImageUpload
+                  value={form.photoUrl}
+                  onChange={(url) => setForm({ ...form, photoUrl: url })}
+                  folder="mesa-directiva"
+                  aspectRatio="1/1"
+                  placeholder="Foto del miembro (cuadrada)"
+                />
+              </div>
+            </div>
             <div>
               <Label htmlFor="name">Nombre completo</Label>
               <Input
@@ -177,9 +193,19 @@ export default function AdminMesaDirectivaPage() {
             className="flex items-center gap-4 rounded-xl border bg-white p-4"
           >
             <GripVertical className="h-4 w-4 cursor-grab text-muted-foreground" />
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-50">
-              <Users className="h-5 w-5 text-brand-400" />
-            </div>
+            {member.photoUrl ? (
+              <Image
+                src={member.photoUrl}
+                alt={member.name}
+                width={40}
+                height={40}
+                className="h-10 w-10 rounded-full object-cover"
+              />
+            ) : (
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-50">
+                <Users className="h-5 w-5 text-brand-400" />
+              </div>
+            )}
             <div className="flex-1">
               <p className="font-medium">{member.name}</p>
               <p className="text-sm text-brand-500">{member.title}</p>
