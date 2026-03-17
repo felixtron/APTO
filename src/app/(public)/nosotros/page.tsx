@@ -9,7 +9,6 @@ import {
   Handshake,
   Users,
   MapPin,
-  ImageIcon,
   ArrowRight,
 } from "lucide-react";
 import { FOUNDED_YEAR, CLATO_MEMBER_SINCE } from "@/lib/constants";
@@ -154,15 +153,15 @@ export default async function NosotrosPage() {
                 Representamos a terapeutas que están preparando vidas para vivir.
               </p>
             </div>
-            {/* Photo placeholder */}
             <div className="flex items-center justify-center">
-              <div className="flex aspect-[4/3] w-full items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 bg-gray-100">
-                <div className="text-center">
-                  <ImageIcon className="mx-auto h-12 w-12 text-gray-400" />
-                  <p className="mt-2 text-sm text-gray-500">
-                    Foto de APTO
-                  </p>
-                </div>
+              <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl">
+                <Image
+                  src="/api/files/nosotros/historia.jpg"
+                  alt="Terapia Ocupacional"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                />
               </div>
             </div>
           </div>
@@ -229,13 +228,14 @@ export default async function NosotrosPage() {
             Estructura organizacional de APTO.
           </p>
           <div className="mt-12 flex items-center justify-center">
-            <div className="flex aspect-[16/9] w-full max-w-4xl items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 bg-gray-100">
-              <div className="text-center">
-                <ImageIcon className="mx-auto h-12 w-12 text-gray-400" />
-                <p className="mt-2 text-sm text-gray-500">
-                  Organigrama
-                </p>
-              </div>
+            <div className="relative w-full max-w-4xl overflow-hidden rounded-2xl border shadow-lg">
+              <Image
+                src="/api/files/nosotros/organigrama.jpg"
+                alt="Organigrama APTO"
+                width={2048}
+                height={1583}
+                className="w-full"
+              />
             </div>
           </div>
         </div>
