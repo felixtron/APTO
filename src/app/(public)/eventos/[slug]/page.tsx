@@ -16,6 +16,12 @@ const modalityLabels: Record<string, string> = {
   HYBRID: "Híbrido",
 };
 
+function formatPrice(centavos: number) {
+  return centavos === 0
+    ? "Gratis"
+    : `$${(centavos / 100).toLocaleString()} MXN`;
+}
+
 export default async function EventoPage({
   params,
   searchParams,
@@ -41,6 +47,14 @@ export default async function EventoPage({
   const spotsLeft = event.maxCapacity
     ? event.maxCapacity - event._count.registrations
     : null;
+
+  const prices = {
+    student: event.priceStudent,
+    teacher: event.price,
+    professional: event.priceProfessional,
+  };
+
+  const allFree = prices.student === 0 && prices.teacher === 0 && prices.professional === 0;
 
   return (
     <div className="bg-white">
@@ -96,23 +110,48 @@ export default async function EventoPage({
           </div>
 
           <div className="mt-8 rounded-xl border bg-muted/30 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Precio</p>
-                <p className="text-2xl font-bold">
-                  {event.price === 0
-                    ? "Gratuito"
-                    : `$${(event.price / 100).toLocaleString()} MXN`}
-                </p>
+            {allFree ? (
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Precio</p>
+                  <p className="text-2xl font-bold">Gratuito</p>
+                </div>
+                <EventRegistration
+                  eventId={event.id}
+                  eventTitle={event.title}
+                  prices={prices}
+                  spotsLeft={spotsLeft}
+                  eventSlug={event.slug}
+                />
               </div>
-              <EventRegistration
-                eventId={event.id}
-                eventTitle={event.title}
-                price={event.price}
-                spotsLeft={spotsLeft}
-                eventSlug={event.slug}
-              />
-            </div>
+            ) : (
+              <div>
+                <p className="mb-3 text-sm font-medium text-muted-foreground">Precios</p>
+                <div className="mb-4 grid gap-2 sm:grid-cols-3">
+                  <div className="rounded-lg border bg-white p-3 text-center">
+                    <p className="text-xs text-muted-foreground">Estudiante</p>
+                    <p className="text-lg font-bold">{formatPrice(prices.student)}</p>
+                  </div>
+                  <div className="rounded-lg border bg-white p-3 text-center">
+                    <p className="text-xs text-muted-foreground">Maestro</p>
+                    <p className="text-lg font-bold">{formatPrice(prices.teacher)}</p>
+                  </div>
+                  <div className="rounded-lg border bg-white p-3 text-center">
+                    <p className="text-xs text-muted-foreground">Profesional</p>
+                    <p className="text-lg font-bold">{formatPrice(prices.professional)}</p>
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <EventRegistration
+                    eventId={event.id}
+                    eventTitle={event.title}
+                    prices={prices}
+                    spotsLeft={spotsLeft}
+                    eventSlug={event.slug}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

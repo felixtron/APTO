@@ -13,18 +13,36 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
+interface Prices {
+  student: number;
+  teacher: number;
+  professional: number;
+}
+
 interface EventRegistrationProps {
   eventId: string;
   eventTitle: string;
-  price: number; // centavos
-  spotsLeft: number | null; // null = unlimited
+  prices: Prices;
+  spotsLeft: number | null;
   eventSlug: string;
+}
+
+const tierLabels: Record<string, string> = {
+  student: "Estudiante",
+  teacher: "Maestro",
+  professional: "Profesional",
+};
+
+function formatPrice(centavos: number) {
+  return centavos === 0
+    ? "Gratis"
+    : `$${(centavos / 100).toLocaleString()} MXN`;
 }
 
 export function EventRegistration({
   eventId,
   eventTitle,
-  price,
+  prices,
   spotsLeft,
 }: EventRegistrationProps) {
   const [open, setOpen] = useState(false);
@@ -32,10 +50,13 @@ export function EventRegistration({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [registrationType, setRegistrationType] = useState("professional");
   const [error, setError] = useState("");
 
   const isSoldOut = spotsLeft === 0;
-  const isFree = price === 0;
+  const allFree = prices.student === 0 && prices.teacher === 0 && prices.professional === 0;
+  const selectedPrice = prices[registrationType as keyof Prices] ?? 0;
+  const isFree = selectedPrice === 0;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -46,7 +67,7 @@ export function EventRegistration({
       const res = await fetch("/api/events/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ eventId, name, email, phone }),
+        body: JSON.stringify({ eventId, name, email, phone, registrationType }),
       });
 
       const data = await res.json();
@@ -58,11 +79,11 @@ export function EventRegistration({
       }
 
       if (data.free) {
-        // Free event — registration confirmed
         setOpen(false);
         setName("");
         setEmail("");
         setPhone("");
+        setRegistrationType("professional");
         toast.success("¡Registro exitoso!", {
           description: `Te has registrado en "${eventTitle}". Recibirás un correo de confirmación.`,
         });
@@ -71,7 +92,6 @@ export function EventRegistration({
       }
 
       if (data.url) {
-        // Paid event — redirect to Stripe checkout
         window.location.href = data.url;
         return;
       }
@@ -103,6 +123,32 @@ export function EventRegistration({
           <p className="text-sm text-muted-foreground">
             {eventTitle}
           </p>
+
+          {/* Tier selector */}
+          {!allFree && (
+            <div className="grid gap-2">
+              <Label>Tipo de asistente</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {(["student", "teacher", "professional"] as const).map((tier) => (
+                  <button
+                    key={tier}
+                    type="button"
+                    onClick={() => setRegistrationType(tier)}
+                    className={`rounded-lg border p-3 text-center transition-colors ${
+                      registrationType === tier
+                        ? "border-brand-500 bg-brand-50 ring-1 ring-brand-500"
+                        : "border-input hover:bg-muted"
+                    }`}
+                  >
+                    <p className="text-xs font-medium">{tierLabels[tier]}</p>
+                    <p className="mt-1 text-sm font-bold">
+                      {formatPrice(prices[tier])}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="grid gap-2">
             <Label htmlFor="reg-name">Nombre completo *</Label>
@@ -149,7 +195,7 @@ export function EventRegistration({
             <p className="text-sm font-medium">
               {isFree
                 ? "Gratuito"
-                : `$${(price / 100).toLocaleString()} MXN`}
+                : `${formatPrice(selectedPrice)}`}
             </p>
             <Button type="submit" disabled={loading}>
               {loading

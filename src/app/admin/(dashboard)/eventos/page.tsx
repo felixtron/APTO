@@ -27,6 +27,8 @@ interface Event {
   location: string | null;
   meetLink: string | null;
   price: number;
+  priceStudent: number;
+  priceProfessional: number;
   maxCapacity: number | null;
   active: boolean;
   createdAt: string;
@@ -46,7 +48,9 @@ const emptyForm = {
   modality: "VIRTUAL",
   location: "",
   meetLink: "",
-  price: "",
+  priceStudent: "",
+  priceTeacher: "",
+  priceProfessional: "",
   maxCapacity: "",
   active: true,
 };
@@ -86,7 +90,9 @@ export default function AdminEventosPage() {
       modality: event.modality,
       location: event.location || "",
       meetLink: event.meetLink || "",
-      price: event.price ? String(event.price / 100) : "",
+      priceStudent: event.priceStudent ? String(event.priceStudent / 100) : "",
+      priceTeacher: event.price ? String(event.price / 100) : "",
+      priceProfessional: event.priceProfessional ? String(event.priceProfessional / 100) : "",
       maxCapacity: event.maxCapacity ? String(event.maxCapacity) : "",
       active: event.active,
     });
@@ -115,7 +121,9 @@ export default function AdminEventosPage() {
       modality: form.modality,
       location: form.location || null,
       meetLink: form.meetLink || null,
-      price: form.price ? Math.round(parseFloat(form.price) * 100) : 0,
+      price: form.priceTeacher ? Math.round(parseFloat(form.priceTeacher) * 100) : 0,
+      priceStudent: form.priceStudent ? Math.round(parseFloat(form.priceStudent) * 100) : 0,
+      priceProfessional: form.priceProfessional ? Math.round(parseFloat(form.priceProfessional) * 100) : 0,
       maxCapacity: form.maxCapacity ? parseInt(form.maxCapacity) : null,
       active: form.active,
     };
@@ -245,18 +253,49 @@ export default function AdminEventosPage() {
                 className="mt-1"
               />
             </div>
-            <div>
-              <Label htmlFor="price">Precio (MXN)</Label>
-              <Input
-                id="price"
-                type="number"
-                min="0"
-                step="0.01"
-                value={form.price}
-                onChange={(e) => setForm({ ...form, price: e.target.value })}
-                placeholder="0 = Gratis"
-                className="mt-1"
-              />
+            <div className="sm:col-span-2">
+              <p className="mb-2 text-sm font-medium">Precios por tipo de asistente (MXN)</p>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div>
+                  <Label htmlFor="priceStudent">Estudiante</Label>
+                  <Input
+                    id="priceStudent"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.priceStudent}
+                    onChange={(e) => setForm({ ...form, priceStudent: e.target.value })}
+                    placeholder="0 = Gratis"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="priceTeacher">Maestro</Label>
+                  <Input
+                    id="priceTeacher"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.priceTeacher}
+                    onChange={(e) => setForm({ ...form, priceTeacher: e.target.value })}
+                    placeholder="0 = Gratis"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="priceProfessional">Profesional</Label>
+                  <Input
+                    id="priceProfessional"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.priceProfessional}
+                    onChange={(e) => setForm({ ...form, priceProfessional: e.target.value })}
+                    placeholder="0 = Gratis"
+                    className="mt-1"
+                  />
+                </div>
+              </div>
             </div>
             <div>
               <Label htmlFor="maxCapacity">Capacidad máxima (opcional)</Label>

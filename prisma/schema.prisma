@@ -99,11 +99,11 @@ model Event {
   modality    EventModality @default(VIRTUAL)
   location    String?
   meetLink    String?
-  price       Int           @default(0) // Centavos MXN (0 = gratis)
-  maxCapacity Int?
-  active      Boolean       @default(true)
-
-  stripePriceId String?
+  price             Int @default(0) // Centavos MXN — precio maestros (legacy field)
+  priceStudent      Int @default(0) // Centavos MXN
+  priceProfessional Int @default(0) // Centavos MXN
+  maxCapacity       Int?
+  active            Boolean @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -125,8 +125,9 @@ model EventRegistration {
   memberId String?
   name     String
   email    String
-  phone    String?
-  status   RegistrationStatus @default(PENDING)
+  phone            String?
+  registrationType String             @default("professional") // student, teacher, professional
+  status           RegistrationStatus @default(PENDING)
 
   stripeSessionId String? @unique
   stripePaymentId String? @unique

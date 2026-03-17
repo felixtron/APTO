@@ -2,13 +2,42 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
 
+const tierLabels: Record<string, string> = {
+  student: "Estudiante",
+  teacher: "Maestro",
+  professional: "Profesional",
+};
+
+function getEventPrice(
+  event: { price: number; priceStudent: number; priceProfessional: number },
+  registrationType: string
+): number {
+  switch (registrationType) {
+    case "student":
+      return event.priceStudent;
+    case "teacher":
+      return event.price; // legacy field = teacher price
+    case "professional":
+      return event.priceProfessional;
+    default:
+      return event.priceProfessional;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const { eventId, name, email, phone } = await request.json();
+    const { eventId, name, email, phone, registrationType = "professional" } = await request.json();
 
     if (!eventId || !name || !email) {
       return NextResponse.json(
         { error: "Datos incompletos" },
+        { status: 400 }
+      );
+    }
+
+    if (!["student", "teacher", "professional"].includes(registrationType)) {
+      return NextResponse.json(
+        { error: "Tipo de registro inválido" },
         { status: 400 }
       );
     }
@@ -56,6 +85,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Resolve price based on registration type
+    const resolvedPrice = getEventPrice(event, registrationType);
+
     // Create registration
     const registration = await prisma.eventRegistration.create({
       data: {
@@ -63,27 +95,32 @@ export async function POST(request: NextRequest) {
         name,
         email,
         phone: phone || null,
-        status: event.price === 0 ? "CONFIRMED" : "PENDING",
+        registrationType,
+        status: resolvedPrice === 0 ? "CONFIRMED" : "PENDING",
       },
     });
 
     // Free event — confirm directly, no Stripe
-    if (event.price === 0) {
+    if (resolvedPrice === 0) {
       return NextResponse.json({ success: true, free: true });
     }
 
     // Paid event — create Stripe checkout session
+    const tierLabel = tierLabels[registrationType] || "Profesional";
     const stripe = await getStripe();
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       customer_email: email,
-      metadata: { eventRegistrationId: registration.id },
+      metadata: {
+        eventRegistrationId: registration.id,
+        registrationType,
+      },
       line_items: [
         {
           price_data: {
             currency: "mxn",
-            product_data: { name: `Registro: ${event.title}` },
-            unit_amount: event.price,
+            product_data: { name: `Registro (${tierLabel}): ${event.title}` },
+            unit_amount: resolvedPrice,
           },
           quantity: 1,
         },

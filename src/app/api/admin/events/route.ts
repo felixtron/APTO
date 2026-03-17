@@ -40,9 +40,10 @@ export async function POST(request: NextRequest) {
       location: data.location || null,
       meetLink: data.meetLink || null,
       price: data.price ?? 0,
+      priceStudent: data.priceStudent ?? 0,
+      priceProfessional: data.priceProfessional ?? 0,
       maxCapacity: data.maxCapacity || null,
       active: data.active ?? true,
-      stripePriceId: data.stripePriceId || null,
     },
   });
 

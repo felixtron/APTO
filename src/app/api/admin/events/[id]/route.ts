@@ -42,9 +42,10 @@ export async function PUT(
       location: data.location !== undefined ? (data.location || null) : undefined,
       meetLink: data.meetLink !== undefined ? (data.meetLink || null) : undefined,
       price: data.price ?? undefined,
+      priceStudent: data.priceStudent ?? undefined,
+      priceProfessional: data.priceProfessional ?? undefined,
       maxCapacity: data.maxCapacity !== undefined ? (data.maxCapacity || null) : undefined,
       active: data.active ?? undefined,
-      stripePriceId: data.stripePriceId ?? undefined,
     },
   });
 
