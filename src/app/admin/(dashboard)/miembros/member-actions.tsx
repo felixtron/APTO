@@ -52,6 +52,7 @@ export function MemberActions({ member }: { member: MemberSummary }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
   async function updateStatus(newStatus: string) {
     setLoading(true);
@@ -68,6 +69,23 @@ export function MemberActions({ member }: { member: MemberSummary }) {
       router.refresh();
     } catch (error) {
       console.error("Error updating member status:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function sendPasswordReset() {
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `/api/admin/members/${member.id}/reset-password`,
+        { method: "POST" }
+      );
+      if (!res.ok) throw new Error("Error al enviar");
+      setResetSent(true);
+    } catch (error) {
+      console.error("Error sending reset:", error);
+      alert("Error al enviar el email de reset");
     } finally {
       setLoading(false);
     }
@@ -153,37 +171,56 @@ export function MemberActions({ member }: { member: MemberSummary }) {
         </div>
 
         <DialogFooter>
-          <div className="flex w-full gap-2">
-            {member.status !== "ACTIVE" && (
-              <Button
-                size="sm"
-                disabled={loading}
-                onClick={() => updateStatus("ACTIVE")}
-                className="bg-green-600 text-white hover:bg-green-700"
-              >
-                {loading ? "Procesando..." : "Activar"}
-              </Button>
-            )}
-            {member.status === "ACTIVE" && (
-              <Button
-                variant="destructive"
-                size="sm"
-                disabled={loading}
-                onClick={() => updateStatus("EXPIRED")}
-              >
-                {loading ? "Procesando..." : "Suspender"}
-              </Button>
-            )}
-            {member.status !== "CANCELLED" && (
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={loading}
-                onClick={() => updateStatus("CANCELLED")}
-              >
-                {loading ? "Procesando..." : "Cancelar"}
-              </Button>
-            )}
+          <div className="flex w-full flex-col gap-3">
+            <div className="flex gap-2">
+              {member.status !== "ACTIVE" && (
+                <Button
+                  size="sm"
+                  disabled={loading}
+                  onClick={() => updateStatus("ACTIVE")}
+                  className="bg-green-600 text-white hover:bg-green-700"
+                >
+                  {loading ? "Procesando..." : "Activar"}
+                </Button>
+              )}
+              {member.status === "ACTIVE" && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  disabled={loading}
+                  onClick={() => updateStatus("EXPIRED")}
+                >
+                  {loading ? "Procesando..." : "Suspender"}
+                </Button>
+              )}
+              {member.status !== "CANCELLED" && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={loading}
+                  onClick={() => updateStatus("CANCELLED")}
+                >
+                  {loading ? "Procesando..." : "Cancelar"}
+                </Button>
+              )}
+            </div>
+            <div className="border-t pt-3">
+              {resetSent ? (
+                <p className="text-sm text-green-600">
+                  Email de reset enviado a {member.email}
+                </p>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={loading}
+                  onClick={sendPasswordReset}
+                  className="w-full"
+                >
+                  {loading ? "Enviando..." : "Enviar reset de contraseña"}
+                </Button>
+              )}
+            </div>
           </div>
         </DialogFooter>
       </DialogContent>

@@ -17,6 +17,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { MemberActions } from "./member-actions";
 import { MemberSearch } from "./member-search";
+import { CreateMemberForm } from "./create-member-form";
 
 const statusColors: Record<string, string> = {
   ACTIVE: "bg-green-100 text-green-800",
@@ -91,8 +92,12 @@ export default async function AdminMiembrosPage({
 
   return (
     <div>
-      <div className="mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold">Miembros</h1>
+      </div>
+
+      <div className="mb-6">
+        <CreateMemberForm />
       </div>
 
       {/* Stats */}
