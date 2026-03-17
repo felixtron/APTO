@@ -10,10 +10,21 @@ import {
   Users,
   MapPin,
   ImageIcon,
+  ArrowRight,
 } from "lucide-react";
 import { FOUNDED_YEAR, CLATO_MEMBER_SINCE } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 import Image from "next/image";
+import Link from "next/link";
+
+const galleryPreview = [
+  { title: "Council Meeting Taipei 2012", url: "/api/files/galeria/e68bc0b2.jpg" },
+  { title: "WFOT Council Meeting Medellín 2016", url: "/api/files/galeria/447a3a5e.jpg" },
+  { title: "Council Meeting Sapporo", url: "/api/files/galeria/5cfd2097.jpg" },
+  { title: "Trinidad and Tobago — WFOT 2016", url: "/api/files/galeria/f550372c.jpg" },
+  { title: "APTO — WFOT", url: "/api/files/galeria/e473ac29.jpg" },
+  { title: "Miembros Honorarios", url: "/api/files/galeria/c2fd3b55.jpg" },
+];
 
 const objetivos = [
   {
@@ -237,20 +248,37 @@ export default async function NosotrosPage() {
             Galería
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-center text-muted-foreground">
-            Momentos que nos definen como asociación.
+            Momentos que nos definen como asociación. Nuestra participación en
+            eventos internacionales de la WFOT y CLATO.
           </p>
           <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
+            {galleryPreview.map((img, i) => (
               <div
                 key={i}
-                className="flex aspect-[4/3] items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50"
+                className="group relative aspect-[4/3] overflow-hidden rounded-xl bg-gray-100"
               >
-                <div className="text-center">
-                  <ImageIcon className="mx-auto h-8 w-8 text-gray-400" />
-                  <p className="mt-1 text-xs text-gray-500">Imagen {i}</p>
-                </div>
+                <Image
+                  src={img.url}
+                  alt={img.title}
+                  fill
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                <p className="absolute bottom-3 left-3 text-sm font-medium text-white">
+                  {img.title}
+                </p>
               </div>
             ))}
+          </div>
+          <div className="mt-8 text-center">
+            <Link
+              href="/nosotros/galeria"
+              className="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-600"
+            >
+              Ver galería completa
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
         </div>
       </section>
