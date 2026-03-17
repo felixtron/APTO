@@ -317,3 +317,22 @@ enum NewsletterStatus {
   SENT
   FAILED
 }
+
+// ═══════════════════════════════════════
+// EVENTO ESPECIAL (Día Mundial TO, etc.)
+// ═══════════════════════════════════════
+
+model SpecialEvent {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  navLabel        String   // Texto del botón en el menú
+  title           String   // Título de la página
+  description     String?  @db.Text
+  programImage    String?  // Imagen del programa
+  registrationUrl String?  // Link de registro externo (Eventbrite, etc.)
+  active          Boolean  @default(false)
+  year            Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

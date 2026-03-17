@@ -14,9 +14,9 @@ const exploreLinks = [
   { href: "/nosotros", label: "Nosotros" },
   { href: "/eventos", label: "Eventos" },
   { href: "/noticias", label: "Noticias" },
-  { href: "/bolsa-trabajo", label: "Bolsa de Trabajo" },
-  { href: "/universidades", label: "Universidades" },
+  { href: "/recursos", label: "Recursos" },
   { href: "/membresia", label: "Membresía" },
+  { href: "/contacto", label: "Contacto" },
 ];
 
 const resourceLinks = [

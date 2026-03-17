@@ -8,6 +8,7 @@ import {
   Award,
   Users,
   UserCircle,
+  Briefcase,
   LogOut,
 } from "lucide-react";
 
@@ -16,6 +17,7 @@ const sidebarLinks = [
   { href: "/miembros/grabaciones", label: "Grabaciones", icon: Video },
   { href: "/miembros/constancias", label: "Constancias", icon: Award },
   { href: "/miembros/directorio", label: "Directorio", icon: Users },
+  { href: "/miembros/bolsa-trabajo", label: "Bolsa de Trabajo", icon: Briefcase },
   { href: "/miembros/perfil", label: "Mi Perfil", icon: UserCircle },
 ];
 

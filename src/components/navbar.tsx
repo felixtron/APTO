@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
@@ -12,12 +12,14 @@ const navLinks = [
   { href: "/eventos", label: "Eventos" },
   { href: "/noticias", label: "Noticias" },
   { href: "/recursos", label: "Recursos" },
-  { href: "/bolsa-trabajo", label: "Bolsa de Trabajo" },
-  { href: "/universidades", label: "Universidades" },
   { href: "/contacto", label: "Contacto" },
 ];
 
-export function Navbar() {
+interface NavbarProps {
+  specialEvent?: { href: string; label: string } | null;
+}
+
+export function Navbar({ specialEvent }: NavbarProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -50,6 +52,15 @@ export function Navbar() {
 
         {/* Desktop CTAs */}
         <div className="hidden items-center gap-2 lg:flex">
+          {specialEvent && (
+            <Link
+              href={specialEvent.href}
+              className="inline-flex items-center gap-1.5 rounded-full bg-green-600 px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-green-700"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              {specialEvent.label}
+            </Link>
+          )}
           <Button variant="ghost" size="sm" render={<Link href="/auth/login" />}>
             Iniciar Sesión
           </Button>
@@ -86,6 +97,16 @@ export function Navbar() {
                     {link.label}
                   </Link>
                 ))}
+                {specialEvent && (
+                  <Link
+                    href={specialEvent.href}
+                    onClick={() => setOpen(false)}
+                    className="mt-1 inline-flex items-center gap-2 rounded-md bg-green-50 px-3 py-2.5 text-sm font-semibold text-green-700 transition-colors hover:bg-green-100"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    {specialEvent.label}
+                  </Link>
+                )}
               </nav>
               <div className="flex flex-col gap-2 border-t pt-4">
                 <Button
