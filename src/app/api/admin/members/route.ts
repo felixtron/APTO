@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
+import { createMembershipCertificate } from "@/lib/generate-certificate";
 
 function generateMemberNumber(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -73,6 +74,9 @@ export async function POST(request: NextRequest) {
         subscriptionEnd,
       },
     });
+
+    // Auto-create membership certificate
+    await createMembershipCertificate(member.id);
 
     return NextResponse.json(
       {

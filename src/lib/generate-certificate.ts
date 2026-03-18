@@ -4,6 +4,7 @@ import QRCode from "qrcode";
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
+import { prisma } from "@/lib/prisma";
 
 export interface CertificateData {
   memberName: string;
@@ -175,6 +176,43 @@ export async function generateCertificatePdf(
   const sha256Hash = sha256(pdfBytes);
 
   return { pdfBytes, sha256Hash };
+}
+
+/**
+ * Create a membership certificate for a member (idempotent — skips if already exists for this year).
+ * Used by both Stripe webhook and admin member creation.
+ */
+export async function createMembershipCertificate(memberId: string) {
+  const year = new Date().getFullYear();
+  const type = "membership";
+
+  // Check if certificate already exists for this member/type/year
+  const existing = await prisma.certificate.findUnique({
+    where: { memberId_type_year: { memberId, type, year } },
+  });
+
+  if (existing) return; // Already has a certificate for this period
+
+  // Generate sequential folio
+  const count = await prisma.certificate.count({
+    where: { year },
+  });
+  const certificateId = await generateCertificateId(year, count);
+
+  // Expiry = end of membership year
+  const expiresAt = new Date(year, 11, 31, 23, 59, 59); // Dec 31
+
+  await prisma.certificate.create({
+    data: {
+      memberId,
+      certificateId,
+      type,
+      year,
+      status: "ACTIVE",
+      issuedAt: new Date(),
+      expiresAt,
+    },
+  });
 }
 
 // Helper to draw centered text
