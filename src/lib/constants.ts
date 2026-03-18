@@ -19,8 +19,7 @@ export const CONTACT_ADDRESS =
   "Calle Acapulco 36, Desp. 203, Col. Roma Norte, CDMX";
 
 // Redes sociales
-export const SOCIAL_FACEBOOK =
-  "https://www.facebook.com/AsociaciondeProfesionalesenTerapiaOcupacional";
+export const SOCIAL_FACEBOOK = "https://www.facebook.com/APTOMX";
 export const SOCIAL_YOUTUBE = "https://www.youtube.com/@aabordag";
 
 // Afiliaciones
