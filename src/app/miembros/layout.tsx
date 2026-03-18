@@ -9,8 +9,8 @@ import {
   Users,
   UserCircle,
   Briefcase,
-  LogOut,
 } from "lucide-react";
+import { LogoutButton } from "./logout-button";
 
 const sidebarLinks = [
   { href: "/miembros", label: "Dashboard", icon: LayoutDashboard },
@@ -70,13 +70,7 @@ export default async function MiembrosLayout({
                 {session.user.email}
               </p>
             </div>
-            <Link
-              href="/api/auth/signout"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
-              <LogOut className="h-4 w-4" />
-              Cerrar sesión
-            </Link>
+            <LogoutButton />
           </div>
         </div>
       </aside>
@@ -95,12 +89,7 @@ export default async function MiembrosLayout({
                 className="h-8 w-auto"
               />
             </Link>
-            <Link
-              href="/api/auth/signout"
-              className="text-sm text-muted-foreground"
-            >
-              Salir
-            </Link>
+            <LogoutButton variant="mobile" />
           </div>
           <nav className="mt-3 flex gap-2 overflow-x-auto">
             {sidebarLinks.map((link) => (
