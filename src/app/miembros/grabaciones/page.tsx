@@ -2,10 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { prisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui/badge";
-import { Play, Clock } from "lucide-react";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
-import Image from "next/image";
+import { Play, Clock, ExternalLink } from "lucide-react";
 import Link from "next/link";
 
 const categoryColors: Record<string, string> = {
@@ -18,15 +15,23 @@ const categoryColors: Record<string, string> = {
 export default async function GrabacionesPage() {
   const recordings = await prisma.recording.findMany({
     where: { active: true },
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ displayOrder: "asc" }, { createdAt: "desc" }],
   });
+
+  // Group recordings by eventTitle
+  const grouped = new Map<string, typeof recordings>();
+  for (const rec of recordings) {
+    const key = rec.eventTitle || "Otras grabaciones";
+    if (!grouped.has(key)) grouped.set(key, []);
+    grouped.get(key)!.push(rec);
+  }
 
   return (
     <div>
       <div className="mb-8">
         <h1 className="text-2xl font-bold">Grabaciones</h1>
         <p className="text-muted-foreground">
-          Biblioteca de videos exclusivos para miembros
+          Biblioteca de conferencias y sesiones exclusivas para miembros
         </p>
       </div>
 
@@ -38,61 +43,58 @@ export default async function GrabacionesPage() {
           </p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {recordings.map((recording) => (
-            <Link
-              key={recording.id}
-              href={recording.videoUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group cursor-pointer overflow-hidden rounded-xl border bg-white transition-shadow hover:shadow-md"
-            >
-              <div className="relative aspect-video bg-gradient-to-br from-brand-100 to-brand-50">
-                {recording.thumbnailUrl ? (
-                  <Image
-                    src={recording.thumbnailUrl}
-                    alt={recording.title}
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/80 transition-transform group-hover:scale-110">
-                      <Play className="h-5 w-5 text-brand-500" />
+        <div className="space-y-10">
+          {Array.from(grouped.entries()).map(([eventTitle, recs]) => (
+            <section key={eventTitle}>
+              <div className="mb-4 flex items-center gap-3">
+                <h2 className="text-lg font-semibold">{eventTitle}</h2>
+                <Badge variant="secondary" className="text-xs">
+                  {recs.length} {recs.length === 1 ? "grabación" : "grabaciones"}
+                </Badge>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {recs.map((recording) => (
+                  <Link
+                    key={recording.id}
+                    href={recording.videoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group flex gap-3 rounded-lg border bg-white p-4 transition-shadow hover:shadow-md"
+                  >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 transition-transform group-hover:scale-110">
+                      <Play className="h-4 w-4 text-brand-600" />
                     </div>
-                  </div>
-                )}
-                {recording.duration && (
-                  <div className="absolute bottom-2 right-2 flex items-center gap-1 rounded bg-black/60 px-2 py-0.5 text-xs text-white">
-                    <Clock className="h-3 w-3" />
-                    {recording.duration} min
-                  </div>
-                )}
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-sm font-medium leading-tight line-clamp-2">
+                        {recording.title}
+                      </h3>
+                      {recording.description && (
+                        <p className="mt-1 text-xs text-muted-foreground line-clamp-1">
+                          {recording.description}
+                        </p>
+                      )}
+                      <div className="mt-2 flex items-center gap-2">
+                        {recording.category && (
+                          <Badge
+                            variant="secondary"
+                            className={`text-[10px] px-1.5 py-0 ${categoryColors[recording.category] || ""}`}
+                          >
+                            {recording.category}
+                          </Badge>
+                        )}
+                        {recording.duration && (
+                          <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                            <Clock className="h-3 w-3" />
+                            {recording.duration} min
+                          </span>
+                        )}
+                        <ExternalLink className="ml-auto h-3 w-3 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                      </div>
+                    </div>
+                  </Link>
+                ))}
               </div>
-              <div className="p-4">
-                <div className="flex items-center gap-2">
-                  {recording.category && (
-                    <Badge
-                      variant="secondary"
-                      className={categoryColors[recording.category] || ""}
-                    >
-                      {recording.category}
-                    </Badge>
-                  )}
-                  <span className="text-xs text-muted-foreground">
-                    {format(recording.createdAt, "MMM yyyy", { locale: es })}
-                  </span>
-                </div>
-                <h3 className="mt-2 text-sm font-semibold leading-tight">
-                  {recording.title}
-                </h3>
-                {recording.eventTitle && (
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {recording.eventTitle}
-                  </p>
-                )}
-              </div>
-            </Link>
+            </section>
           ))}
         </div>
       )}
