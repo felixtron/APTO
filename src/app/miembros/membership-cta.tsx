@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 interface MembershipCtaProps {
   memberId: string;
   memberEmail: string;
+  memberType: string; // STUDENT, PROFESSIONAL
   status: string; // PENDING, ACTIVE, EXPIRED, CANCELLED
   subscriptionEnd: string | null; // ISO date string
 }
@@ -13,6 +14,7 @@ interface MembershipCtaProps {
 export function MembershipCta({
   memberId,
   memberEmail,
+  memberType,
   status,
   subscriptionEnd,
 }: MembershipCtaProps) {
@@ -33,7 +35,11 @@ export function MembershipCta({
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ memberId, memberEmail }),
+        body: JSON.stringify({
+          plan: memberType === "STUDENT" ? "student" : "professional",
+          memberId,
+          memberEmail,
+        }),
       });
       const data = await res.json();
       if (data.url) {

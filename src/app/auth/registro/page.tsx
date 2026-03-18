@@ -1,18 +1,43 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CheckCircle2, Loader2 } from "lucide-react";
 
-export default function RegistroPage() {
+interface SessionData {
+  email: string;
+  plan: string;
+  customerId: string | null;
+  subscriptionId: string | null;
+}
+
+function RegistroForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [sessionData, setSessionData] = useState<SessionData | null>(null);
+  const [loadingSession, setLoadingSession] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const sessionId = searchParams.get("session_id");
+
+  useEffect(() => {
+    if (!sessionId) return;
+    setLoadingSession(true);
+    fetch(`/api/checkout/session?session_id=${sessionId}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Sesión inválida");
+        return res.json();
+      })
+      .then((data) => setSessionData(data))
+      .catch(() => setError("No se pudo verificar el pago. Intenta de nuevo."))
+      .finally(() => setLoadingSession(false));
+  }, [sessionId]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -35,10 +60,11 @@ export default function RegistroPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: formData.get("name"),
-          email: formData.get("email"),
+          email: sessionData?.email || formData.get("email"),
           phone: formData.get("phone"),
           password,
           institution: formData.get("institution"),
+          ...(sessionId ? { sessionId } : {}),
         }),
       });
 
@@ -56,6 +82,20 @@ export default function RegistroPage() {
     }
   }
 
+  const planLabel =
+    sessionData?.plan === "student" ? "Estudiante" : "Profesional";
+
+  if (loadingSession) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-muted/30">
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          Verificando pago...
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4 py-12">
       <Card className="w-full max-w-md">
@@ -69,10 +109,25 @@ export default function RegistroPage() {
               className="h-12 w-auto"
             />
           </Link>
-          <CardTitle>Crear Cuenta</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Únete a la comunidad APTO
-          </p>
+          {sessionData ? (
+            <>
+              <div className="mx-auto mb-2 flex items-center gap-2 rounded-full bg-green-50 px-3 py-1 text-sm text-green-700">
+                <CheckCircle2 className="h-4 w-4" />
+                Pago confirmado — {planLabel}
+              </div>
+              <CardTitle>Completa tu Registro</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Crea tu cuenta para activar tu membresía
+              </p>
+            </>
+          ) : (
+            <>
+              <CardTitle>Crear Cuenta</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Únete a la comunidad APTO
+              </p>
+            </>
+          )}
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -95,6 +150,8 @@ export default function RegistroPage() {
                 required
                 placeholder="tu@email.com"
                 className="mt-1"
+                defaultValue={sessionData?.email || ""}
+                readOnly={!!sessionData?.email}
               />
             </div>
             <div>
@@ -144,7 +201,11 @@ export default function RegistroPage() {
             </div>
             {error && <p className="text-sm text-red-600">{error}</p>}
             <Button type="submit" disabled={loading} className="w-full">
-              {loading ? "Registrando..." : "Crear cuenta"}
+              {loading
+                ? "Registrando..."
+                : sessionData
+                  ? "Activar membresía"
+                  : "Crear cuenta"}
             </Button>
           </form>
           <p className="mt-4 text-center text-sm text-muted-foreground">
@@ -159,5 +220,19 @@ export default function RegistroPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function RegistroPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-muted/30">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      <RegistroForm />
+    </Suspense>
   );
 }

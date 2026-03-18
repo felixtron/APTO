@@ -113,6 +113,7 @@ export default async function MiembrosDashboard({
         <MembershipCta
           memberId={memberId}
           memberEmail={member.email}
+          memberType={member.type}
           status={member.status}
           subscriptionEnd={member.subscriptionEnd?.toISOString() ?? null}
         />

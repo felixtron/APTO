@@ -1,6 +1,8 @@
-import Link from "next/link";
+"use client";
+
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Check, ArrowRight } from "lucide-react";
+import { Check, ArrowRight, Loader2 } from "lucide-react";
 
 const features = [
   "Membresía individual WFOT",
@@ -18,6 +20,7 @@ const features = [
 const plans = [
   {
     name: "Estudiante",
+    plan: "student" as const,
     price: "$300",
     period: "MXN / año",
     description: "Para estudiantes de Terapia Ocupacional",
@@ -25,6 +28,7 @@ const plans = [
   },
   {
     name: "Profesional",
+    plan: "professional" as const,
     price: "$800",
     period: "MXN / año",
     description: "Para Terapeutas Ocupacionales titulados",
@@ -36,7 +40,7 @@ const plans = [
 const faqs = [
   {
     q: "¿Cómo me registro?",
-    a: "Crea tu cuenta, realiza el pago en línea y tu membresía se activa inmediatamente.",
+    a: "Selecciona tu plan, realiza el pago en línea y completa tu registro. Tu membresía se activa inmediatamente.",
   },
   {
     q: "¿La membresía se renueva automáticamente?",
@@ -53,6 +57,27 @@ const faqs = [
 ];
 
 export default function MembresiaPage() {
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+
+  async function handleCheckout(plan: "student" | "professional") {
+    setLoadingPlan(plan);
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error("Checkout error:", error);
+    } finally {
+      setLoadingPlan(null);
+    }
+  }
+
   return (
     <div>
       <section className="bg-gradient-to-b from-brand-50 to-white">
@@ -114,10 +139,20 @@ export default function MembresiaPage() {
                   className="mt-8 w-full"
                   size="lg"
                   variant={plan.highlight ? "default" : "outline"}
-                  render={<Link href="/auth/registro" />}
+                  disabled={loadingPlan !== null}
+                  onClick={() => handleCheckout(plan.plan)}
                 >
-                  Inscribirse
-                  <ArrowRight className="ml-2 h-4 w-4" />
+                  {loadingPlan === plan.plan ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Procesando...
+                    </>
+                  ) : (
+                    <>
+                      Pagar y Registrarse
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </>
+                  )}
                 </Button>
               </div>
             ))}

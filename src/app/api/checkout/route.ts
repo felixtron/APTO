@@ -1,29 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getStripe } from "@/lib/stripe";
-import { MEMBERSHIP_PRICE, MEMBERSHIP_CURRENCY } from "@/lib/constants";
+import { getStripe, getStripePriceId } from "@/lib/stripe";
+import type { MembershipPlan } from "@/lib/stripe";
 
 export async function POST(request: NextRequest) {
   try {
-    const { memberId, memberEmail } = await request.json();
+    const { plan, memberId, memberEmail } = await request.json();
+
+    const membershipPlan: MembershipPlan =
+      plan === "student" ? "student" : "professional";
 
     const stripe = await getStripe();
+    const priceId = await getStripePriceId(membershipPlan);
+
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://apto.org.mx";
+
+    // Pre-registration checkout (no account yet)
+    if (!memberId) {
+      const session = await stripe.checkout.sessions.create({
+        mode: "subscription",
+        line_items: [{ price: priceId, quantity: 1 }],
+        metadata: { plan: membershipPlan },
+        success_url: `${baseUrl}/auth/registro?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${baseUrl}/membresia?checkout=cancelled`,
+      });
+      return NextResponse.json({ url: session.url });
+    }
+
+    // Existing member renewal
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer_email: memberEmail,
-      metadata: { memberId },
-      line_items: [
-        {
-          price_data: {
-            currency: MEMBERSHIP_CURRENCY,
-            product_data: { name: "Membresía APTO" },
-            unit_amount: MEMBERSHIP_PRICE,
-            recurring: { interval: "year" },
-          },
-          quantity: 1,
-        },
-      ],
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/miembros?checkout=success`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/membresia?checkout=cancelled`,
+      metadata: { memberId, plan: membershipPlan },
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: `${baseUrl}/miembros?checkout=success`,
+      cancel_url: `${baseUrl}/membresia?checkout=cancelled`,
     });
 
     return NextResponse.json({ url: session.url });

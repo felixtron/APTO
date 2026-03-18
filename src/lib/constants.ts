@@ -3,9 +3,8 @@ export const SITE_DESCRIPTION =
   "Impulsamos la Terapia Ocupacional en México desde 1993. Membresías, eventos, recursos profesionales.";
 
 // Membresía anual — centavos MXN
-export const MEMBERSHIP_PRICE = 80000; // $800.00 MXN
-export const MEMBERSHIP_DISPLAY = "$800 MXN";
-
+export const MEMBERSHIP_PRICE_PROFESSIONAL = 80000; // $800.00 MXN
+export const MEMBERSHIP_PRICE_STUDENT = 30000; // $300.00 MXN
 export const MEMBERSHIP_CURRENCY = "mxn";
 
 // Timezone fijo (Ciudad de México)

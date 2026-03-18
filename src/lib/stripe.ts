@@ -54,4 +54,18 @@ export async function getStripeWebhookSecret(): Promise<string> {
   return getStripeKeys(mode).webhookSecret;
 }
 
+export type MembershipPlan = "student" | "professional";
+
+export async function getStripePriceId(plan: MembershipPlan): Promise<string> {
+  const mode = await getStripeMode();
+  if (mode === "live") {
+    return plan === "student"
+      ? process.env.STRIPE_LIVE_PRICE_STUDENT!
+      : process.env.STRIPE_LIVE_PRICE_PROFESSIONAL!;
+  }
+  return plan === "student"
+    ? process.env.STRIPE_TEST_PRICE_STUDENT!
+    : process.env.STRIPE_TEST_PRICE_PROFESSIONAL!;
+}
+
 export { Stripe };
