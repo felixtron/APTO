@@ -77,8 +77,14 @@ export async function POST(request: NextRequest) {
       // Get subscription end date
       let subscriptionEnd: Date | null = null;
       if (subscriptionId) {
-        const sub = await stripe.subscriptions.retrieve(subscriptionId) as unknown as { current_period_end: number };
-        subscriptionEnd = new Date(sub.current_period_end * 1000);
+        const sub = await stripe.subscriptions.retrieve(subscriptionId);
+        // Try top-level first, then items (newer Stripe API versions moved it to items)
+        const periodEnd =
+          (sub as unknown as Record<string, unknown>).current_period_end as number | undefined
+          ?? (sub.items?.data?.[0] as unknown as Record<string, unknown>)?.current_period_end as number | undefined;
+        if (periodEnd) {
+          subscriptionEnd = new Date(periodEnd * 1000);
+        }
       }
 
       const member = await prisma.member.create({
