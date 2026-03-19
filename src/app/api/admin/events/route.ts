@@ -12,6 +12,10 @@ function slugify(text: string): string {
 }
 
 export async function GET() {
+  if (!(await isAdminAuthenticated())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const events = await prisma.event.findMany({
     orderBy: { scheduledAt: "desc" },
     include: {

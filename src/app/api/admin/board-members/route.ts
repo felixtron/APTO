@@ -3,6 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
 
 export async function GET() {
+  if (!(await isAdminAuthenticated())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const members = await prisma.boardMember.findMany({
     where: { active: true },
     orderBy: { displayOrder: "asc" },

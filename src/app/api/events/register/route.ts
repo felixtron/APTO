@@ -83,7 +83,11 @@ export async function POST(request: NextRequest) {
       }
       memberId = member.id;
     } else if (bodyMemberId) {
-      memberId = bodyMemberId;
+      // Verify memberId belongs to the authenticated user
+      const session = await auth();
+      if (session?.user?.id === bodyMemberId) {
+        memberId = bodyMemberId;
+      }
     }
 
     // Check capacity

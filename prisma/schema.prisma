@@ -142,6 +142,8 @@ model EventRegistration {
   member Member? @relation(fields: [memberId], references: [id])
 
   @@index([eventId, status])
+  @@index([email, eventId])
+  @@index([memberId])
 }
 
 enum RegistrationStatus {
@@ -208,6 +210,7 @@ model Certificate {
   @@unique([memberId, type, year, eventId])
   @@index([certificateId])
   @@index([status])
+  @@index([memberId])
 }
 
 enum CertStatus {

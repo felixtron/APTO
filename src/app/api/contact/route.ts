@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { getResend } from "@/lib/resend";
 import { CONTACT_EMAIL } from "@/lib/constants";
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export async function POST(request: NextRequest) {
   try {
     const { name, email, subject, message } = await request.json();
@@ -13,6 +23,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!EMAIL_REGEX.test(email)) {
+      return NextResponse.json(
+        { error: "Email inválido" },
+        { status: 400 }
+      );
+    }
+
+    const safeName = escapeHtml(name);
+    const safeEmail = escapeHtml(email);
+    const safeSubject = escapeHtml(subject || "Sin asunto");
+    const safeMessage = escapeHtml(message).replace(/\n/g, "<br />");
+
     await getResend().emails.send({
       from: process.env.RESEND_FROM_EMAIL || "APTO <noreply@apto.org.mx>",
       to: CONTACT_EMAIL,
@@ -20,11 +42,11 @@ export async function POST(request: NextRequest) {
       subject: subject || `Contacto de ${name}`,
       html: `
         <h2>Nuevo mensaje de contacto</h2>
-        <p><strong>Nombre:</strong> ${name}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Asunto:</strong> ${subject || "Sin asunto"}</p>
+        <p><strong>Nombre:</strong> ${safeName}</p>
+        <p><strong>Email:</strong> ${safeEmail}</p>
+        <p><strong>Asunto:</strong> ${safeSubject}</p>
         <hr />
-        <p>${message.replace(/\n/g, "<br />")}</p>
+        <p>${safeMessage}</p>
       `,
     });
 

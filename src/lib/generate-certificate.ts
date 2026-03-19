@@ -43,14 +43,24 @@ function formatPeriod(start: Date, end: Date): string {
   return `${startStr} a ${endStr}`;
 }
 
+// Cache font and template buffers in memory (they never change at runtime)
+let _cachedTemplate: Uint8Array | null = null;
+const _fontCache = new Map<string, Uint8Array>();
+
 function loadFont(filename: string): Uint8Array {
-  const fontPath = path.join(process.cwd(), "public", "fonts", filename);
-  return fs.readFileSync(fontPath);
+  if (!_fontCache.has(filename)) {
+    const fontPath = path.join(process.cwd(), "public", "fonts", filename);
+    _fontCache.set(filename, fs.readFileSync(fontPath));
+  }
+  return _fontCache.get(filename)!;
 }
 
 function loadTemplate(): Uint8Array {
-  const templatePath = path.join(process.cwd(), "PlantillaAPTO.pdf");
-  return fs.readFileSync(templatePath);
+  if (!_cachedTemplate) {
+    const templatePath = path.join(process.cwd(), "PlantillaAPTO.pdf");
+    _cachedTemplate = fs.readFileSync(templatePath);
+  }
+  return _cachedTemplate;
 }
 
 function buildVerificationUrl(certificateId: string): string {

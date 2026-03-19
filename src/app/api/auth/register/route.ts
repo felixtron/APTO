@@ -26,6 +26,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (password.length < 8) {
+      return NextResponse.json(
+        { error: "La contraseña debe tener al menos 8 caracteres" },
+        { status: 400 }
+      );
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: "Email inválido" },
+        { status: 400 }
+      );
+    }
+
     const normalizedEmail = email.toLowerCase().trim();
 
     const existing = await prisma.member.findUnique({
@@ -58,6 +73,15 @@ export async function POST(request: NextRequest) {
       if (session.payment_status !== "paid") {
         return NextResponse.json(
           { error: "El pago no se ha completado" },
+          { status: 400 }
+        );
+      }
+
+      // Verify email matches the Stripe session
+      const sessionEmail = (session.customer_details?.email || session.customer_email || "").toLowerCase();
+      if (sessionEmail && sessionEmail !== normalizedEmail) {
+        return NextResponse.json(
+          { error: "El email no coincide con la sesión de pago" },
           { status: 400 }
         );
       }
