@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getStripeForMode, getStripeWebhookSecret } from "@/lib/stripe";
 import type { StripeMode } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
-import { createMembershipCertificate } from "@/lib/generate-certificate";
+import { createMembershipCertificate, createTrainingCertificate } from "@/lib/generate-certificate";
 import { sendEventConfirmationEmail } from "@/lib/emails";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -152,6 +152,15 @@ async function handleEventRegistration(
       eventModality: event.modality,
       meetLink: event.meetLink,
     }).catch(console.error);
+
+    // Auto-generate training certificate for members-only paid events
+    if (event.membersOnly && registration.memberId) {
+      try {
+        await createTrainingCertificate(registration.memberId, registration.eventId);
+      } catch (err) {
+        console.error("Error creating training certificate:", err);
+      }
+    }
   }
 }
 

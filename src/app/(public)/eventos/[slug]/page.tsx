@@ -1,10 +1,12 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { ArrowLeft, Calendar, MapPin, Users } from "lucide-react";
+import { ArrowLeft, Calendar, Lock, MapPin, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { EventRegistration } from "./event-registration";
@@ -44,6 +46,27 @@ export default async function EventoPage({
     notFound();
   }
 
+  // Check member access for members-only events
+  let memberInfo: { id: string; name: string; email: string } | null = null;
+  let memberAccessDenied: "not-logged-in" | "not-active" | null = null;
+
+  if (event.membersOnly) {
+    const session = await auth();
+    if (!session?.user?.id) {
+      memberAccessDenied = "not-logged-in";
+    } else {
+      const member = await prisma.member.findUnique({
+        where: { id: session.user.id },
+        select: { id: true, name: true, email: true, status: true },
+      });
+      if (!member || member.status !== "ACTIVE") {
+        memberAccessDenied = "not-active";
+      } else {
+        memberInfo = { id: member.id, name: member.name, email: member.email };
+      }
+    }
+  }
+
   const spotsLeft = event.maxCapacity
     ? event.maxCapacity - event._count.registrations
     : null;
@@ -79,7 +102,15 @@ export default async function EventoPage({
               />
             </div>
           )}
-          <Badge variant="secondary">{modalityLabels[event.modality]}</Badge>
+          <div className="flex gap-2">
+            <Badge variant="secondary">{modalityLabels[event.modality]}</Badge>
+            {event.membersOnly && (
+              <Badge variant="secondary" className="bg-amber-50 text-amber-700">
+                <Lock className="mr-1 h-3 w-3" />
+                Solo miembros
+              </Badge>
+            )}
+          </div>
           <h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
             {event.title}
           </h1>
@@ -110,7 +141,29 @@ export default async function EventoPage({
           </div>
 
           <div className="mt-8 rounded-xl border bg-muted/30 p-6">
-            {allFree ? (
+            {memberAccessDenied === "not-logged-in" ? (
+              <div className="text-center py-4">
+                <Lock className="mx-auto h-8 w-8 text-amber-500" />
+                <p className="mt-2 font-semibold">Evento exclusivo para miembros</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Inicia sesión con tu cuenta de miembro para registrarte.
+                </p>
+                <Button className="mt-4" render={<Link href="/auth/login" />}>
+                  Iniciar sesión
+                </Button>
+              </div>
+            ) : memberAccessDenied === "not-active" ? (
+              <div className="text-center py-4">
+                <Lock className="mx-auto h-8 w-8 text-amber-500" />
+                <p className="mt-2 font-semibold">Evento exclusivo para miembros activos</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Activa tu membresía para participar en este evento.
+                </p>
+                <Button className="mt-4" render={<Link href="/membresia" />}>
+                  Activar membresía
+                </Button>
+              </div>
+            ) : allFree ? (
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Precio</p>
@@ -122,6 +175,8 @@ export default async function EventoPage({
                   prices={prices}
                   spotsLeft={spotsLeft}
                   eventSlug={event.slug}
+                  membersOnly={event.membersOnly}
+                  memberInfo={memberInfo}
                 />
               </div>
             ) : (
@@ -148,6 +203,8 @@ export default async function EventoPage({
                     prices={prices}
                     spotsLeft={spotsLeft}
                     eventSlug={event.slug}
+                    membersOnly={event.membersOnly}
+                    memberInfo={memberInfo}
                   />
                 </div>
               </div>

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
+import { auth } from "@/lib/auth";
+import { createTrainingCertificate } from "@/lib/generate-certificate";
 
 const tierLabels: Record<string, string> = {
   student: "Estudiante",
@@ -26,7 +28,7 @@ function getEventPrice(
 
 export async function POST(request: NextRequest) {
   try {
-    const { eventId, name, email, phone, registrationType = "professional" } = await request.json();
+    const { eventId, name, email, phone, registrationType = "professional", memberId: bodyMemberId } = await request.json();
 
     if (!eventId || !name || !email) {
       return NextResponse.json(
@@ -57,6 +59,31 @@ export async function POST(request: NextRequest) {
         { error: "Evento no encontrado" },
         { status: 404 }
       );
+    }
+
+    // Members-only enforcement
+    let memberId: string | null = null;
+    if (event.membersOnly) {
+      const session = await auth();
+      if (!session?.user?.id) {
+        return NextResponse.json(
+          { error: "Debes iniciar sesión para registrarte en este evento" },
+          { status: 401 }
+        );
+      }
+      const member = await prisma.member.findUnique({
+        where: { id: session.user.id },
+        select: { id: true, status: true },
+      });
+      if (!member || member.status !== "ACTIVE") {
+        return NextResponse.json(
+          { error: "Solo miembros activos pueden registrarse en este evento" },
+          { status: 403 }
+        );
+      }
+      memberId = member.id;
+    } else if (bodyMemberId) {
+      memberId = bodyMemberId;
     }
 
     // Check capacity
@@ -92,6 +119,7 @@ export async function POST(request: NextRequest) {
     const registration = await prisma.eventRegistration.create({
       data: {
         eventId,
+        memberId,
         name,
         email,
         phone: phone || null,
@@ -102,6 +130,14 @@ export async function POST(request: NextRequest) {
 
     // Free event — confirm directly, no Stripe
     if (resolvedPrice === 0) {
+      // Auto-generate training certificate for members-only events
+      if (event.membersOnly && memberId) {
+        try {
+          await createTrainingCertificate(memberId, eventId);
+        } catch (err) {
+          console.error("Error creating training certificate:", err);
+        }
+      }
       return NextResponse.json({ success: true, free: true });
     }
 
@@ -114,6 +150,7 @@ export async function POST(request: NextRequest) {
       metadata: {
         eventRegistrationId: registration.id,
         registrationType,
+        ...(memberId ? { memberId } : {}),
       },
       line_items: [
         {

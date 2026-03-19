@@ -46,6 +46,7 @@ export async function PUT(
       priceProfessional: data.priceProfessional ?? undefined,
       maxCapacity: data.maxCapacity !== undefined ? (data.maxCapacity || null) : undefined,
       active: data.active ?? undefined,
+      membersOnly: data.membersOnly ?? undefined,
     },
   });
 

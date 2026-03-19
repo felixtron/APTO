@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { MapPin } from "lucide-react";
+import { Lock, MapPin } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -47,6 +47,7 @@ export default async function EventosPage() {
       price: true,
       priceStudent: true,
       priceProfessional: true,
+      membersOnly: true,
     },
   });
 
@@ -98,6 +99,12 @@ export default async function EventosPage() {
                         <Badge variant="secondary" className={priceBadge.className}>
                           {priceBadge.label}
                         </Badge>
+                        {event.membersOnly && (
+                          <Badge variant="secondary" className="bg-amber-50 text-amber-700">
+                            <Lock className="mr-1 h-3 w-3" />
+                            Solo miembros
+                          </Badge>
+                        )}
                       </div>
                     </div>
                     <h2 className="mt-4 text-lg font-semibold group-hover:text-brand-500">

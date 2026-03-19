@@ -54,6 +54,9 @@ export default async function VerificarPage({
       member: {
         select: { name: true, memberNumber: true, subscriptionEnd: true },
       },
+      event: {
+        select: { title: true, scheduledAt: true },
+      },
     },
   });
 
@@ -110,9 +113,20 @@ export default async function VerificarPage({
             value={
               certificate.type === "membership"
                 ? "Constancia de Membresía"
-                : certificate.type
+                : certificate.type === "training"
+                  ? "Constancia de Capacitación"
+                  : certificate.type
             }
           />
+          {certificate.event && (
+            <>
+              <DetailRow label="Evento" value={certificate.event.title} />
+              <DetailRow
+                label="Fecha del evento"
+                value={formatDate(certificate.event.scheduledAt)}
+              />
+            </>
+          )}
           <DetailRow label="Año" value={certificate.year.toString()} />
           <DetailRow
             label="Fecha de emisión"

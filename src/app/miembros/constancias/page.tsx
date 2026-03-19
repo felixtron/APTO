@@ -25,6 +25,7 @@ export default async function ConstanciasPage() {
   const certificates = await prisma.certificate.findMany({
     where: { memberId: session.user.id },
     orderBy: { issuedAt: "desc" },
+    include: { event: { select: { title: true } } },
   });
 
   const isActive = member?.status === "ACTIVE";
@@ -34,7 +35,7 @@ export default async function ConstanciasPage() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold">Constancias</h1>
         <p className="text-muted-foreground">
-          Descarga tus constancias de membresía verificables
+          Descarga tus constancias de membresía y capacitación verificables
         </p>
         {member?.memberNumber && (
           <p className="mt-1 text-sm text-muted-foreground">
@@ -76,10 +77,17 @@ export default async function ConstanciasPage() {
                     <h3 className="font-semibold">
                       {cert.type === "membership"
                         ? "Constancia de Membresía"
-                        : cert.type}
+                        : cert.type === "training"
+                          ? "Constancia de Capacitación"
+                          : cert.type}
                     </h3>
                     <Badge variant={st.variant}>{st.label}</Badge>
                   </div>
+                  {cert.event && (
+                    <p className="mt-0.5 text-sm text-muted-foreground">
+                      {cert.event.title}
+                    </p>
+                  )}
                   <div className="mt-0.5 flex items-center gap-3 text-sm text-muted-foreground">
                     <span>{cert.year}</span>
                     <span className="flex items-center gap-1">

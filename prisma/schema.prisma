@@ -105,11 +105,13 @@ model Event {
   priceProfessional Int @default(0) // Centavos MXN
   maxCapacity       Int?
   active            Boolean @default(true)
+  membersOnly       Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   registrations EventRegistration[]
+  certificates  Certificate[]
 
   @@index([scheduledAt, active])
 }
@@ -189,8 +191,9 @@ model Certificate {
   id            String     @id @default(cuid())
   memberId      String
   certificateId String     @unique // Folio: "APTO-2025-0001"
-  type          String     // "membership", "congress"
+  type          String     // "membership", "training"
   year          Int
+  eventId       String?    // Solo para certificados de capacitación
   sha256Hash    String?    // Hash del PDF generado
   status        CertStatus @default(ACTIVE)
 
@@ -200,8 +203,9 @@ model Certificate {
   revokedReason String?
 
   member Member @relation(fields: [memberId], references: [id])
+  event  Event? @relation(fields: [eventId], references: [id])
 
-  @@unique([memberId, type, year])
+  @@unique([memberId, type, year, eventId])
   @@index([certificateId])
   @@index([status])
 }

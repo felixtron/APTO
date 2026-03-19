@@ -32,6 +32,7 @@ interface Event {
   priceProfessional: number;
   maxCapacity: number | null;
   active: boolean;
+  membersOnly: boolean;
   createdAt: string;
   _count: { registrations: number };
 }
@@ -55,6 +56,7 @@ const emptyForm = {
   priceProfessional: "",
   maxCapacity: "",
   active: true,
+  membersOnly: false,
 };
 
 export default function AdminEventosPage() {
@@ -98,6 +100,7 @@ export default function AdminEventosPage() {
       priceProfessional: event.priceProfessional ? String(event.priceProfessional / 100) : "",
       maxCapacity: event.maxCapacity ? String(event.maxCapacity) : "",
       active: event.active,
+      membersOnly: event.membersOnly,
     });
     setEditingId(event.id);
     setShowForm(true);
@@ -130,6 +133,7 @@ export default function AdminEventosPage() {
       priceProfessional: form.priceProfessional ? Math.round(parseFloat(form.priceProfessional) * 100) : 0,
       maxCapacity: form.maxCapacity ? parseInt(form.maxCapacity) : null,
       active: form.active,
+      membersOnly: form.membersOnly,
     };
 
     await fetch(url, {
@@ -327,7 +331,7 @@ export default function AdminEventosPage() {
                 className="mt-1"
               />
             </div>
-            <div className="flex items-end">
+            <div className="flex items-end gap-6">
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -338,6 +342,17 @@ export default function AdminEventosPage() {
                   className="h-4 w-4 rounded border-gray-300"
                 />
                 <span className="text-sm">Activo</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={form.membersOnly}
+                  onChange={(e) =>
+                    setForm({ ...form, membersOnly: e.target.checked })
+                  }
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <span className="text-sm">Solo miembros</span>
               </label>
             </div>
             <div className="sm:col-span-2 flex gap-2">
@@ -368,7 +383,12 @@ export default function AdminEventosPage() {
           <TableBody>
             {events.map((event) => (
               <TableRow key={event.id}>
-                <TableCell className="font-medium">{event.title}</TableCell>
+                <TableCell className="font-medium">
+                  {event.title}
+                  {event.membersOnly && (
+                    <Badge className="ml-2 bg-blue-100 text-blue-800">Solo miembros</Badge>
+                  )}
+                </TableCell>
                 <TableCell className="text-muted-foreground">
                   {new Date(event.scheduledAt).toLocaleDateString("es-MX", {
                     day: "numeric",

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { generateCertificatePdf } from "@/lib/generate-certificate";
+import { generateCertificatePdf, generateTrainingCertificatePdf } from "@/lib/generate-certificate";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
   const certificate = await prisma.certificate.findUnique({
     where: { id: certId },
-    include: { member: true },
+    include: { member: true, event: true },
   });
 
   if (!certificate || certificate.memberId !== session.user.id) {
@@ -52,17 +52,32 @@ export async function GET(request: NextRequest) {
     orderBy: { displayOrder: "asc" },
   });
 
-  const periodStart = member.createdAt;
-  const periodEnd = member.subscriptionEnd ?? new Date();
+  const presidentName = president?.name ?? "Mesa Directiva APTO";
 
-  const { pdfBytes, sha256Hash } = await generateCertificatePdf({
-    memberName: member.name,
-    memberNumber: member.memberNumber,
-    certificateId: certificate.certificateId,
-    periodStart,
-    periodEnd,
-    presidentName: president?.name ?? "Mesa Directiva APTO",
-  });
+  let pdfBytes: Uint8Array;
+  let sha256Hash: string;
+
+  if (certificate.type === "training" && certificate.event) {
+    ({ pdfBytes, sha256Hash } = await generateTrainingCertificatePdf({
+      memberName: member.name,
+      memberNumber: member.memberNumber,
+      certificateId: certificate.certificateId,
+      eventTitle: certificate.event.title,
+      eventDate: certificate.event.scheduledAt,
+      presidentName,
+    }));
+  } else {
+    const periodStart = member.createdAt;
+    const periodEnd = member.subscriptionEnd ?? new Date();
+    ({ pdfBytes, sha256Hash } = await generateCertificatePdf({
+      memberName: member.name,
+      memberNumber: member.memberNumber,
+      certificateId: certificate.certificateId,
+      periodStart,
+      periodEnd,
+      presidentName,
+    }));
+  }
 
   // Store hash if not already set
   if (!certificate.sha256Hash) {

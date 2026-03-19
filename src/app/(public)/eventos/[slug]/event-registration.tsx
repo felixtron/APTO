@@ -25,6 +25,8 @@ interface EventRegistrationProps {
   prices: Prices;
   spotsLeft: number | null;
   eventSlug: string;
+  membersOnly?: boolean;
+  memberInfo?: { id: string; name: string; email: string } | null;
 }
 
 const tierLabels: Record<string, string> = {
@@ -44,11 +46,13 @@ export function EventRegistration({
   eventTitle,
   prices,
   spotsLeft,
+  membersOnly,
+  memberInfo,
 }: EventRegistrationProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [name, setName] = useState(memberInfo?.name || "");
+  const [email, setEmail] = useState(memberInfo?.email || "");
   const [phone, setPhone] = useState("");
   const [registrationType, setRegistrationType] = useState("professional");
   const [error, setError] = useState("");
@@ -67,7 +71,7 @@ export function EventRegistration({
       const res = await fetch("/api/events/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ eventId, name, email, phone, registrationType }),
+        body: JSON.stringify({ eventId, name, email, phone, registrationType, memberId: memberInfo?.id }),
       });
 
       const data = await res.json();
@@ -158,7 +162,8 @@ export function EventRegistration({
               onChange={(e) => setName(e.target.value)}
               placeholder="Tu nombre completo"
               required
-              disabled={loading}
+              disabled={loading || !!memberInfo}
+              readOnly={!!memberInfo}
             />
           </div>
 
@@ -171,7 +176,8 @@ export function EventRegistration({
               onChange={(e) => setEmail(e.target.value)}
               placeholder="tu@email.com"
               required
-              disabled={loading}
+              disabled={loading || !!memberInfo}
+              readOnly={!!memberInfo}
             />
           </div>
 

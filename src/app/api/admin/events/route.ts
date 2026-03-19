@@ -44,6 +44,7 @@ export async function POST(request: NextRequest) {
       priceProfessional: data.priceProfessional ?? 0,
       maxCapacity: data.maxCapacity || null,
       active: data.active ?? true,
+      membersOnly: data.membersOnly ?? false,
     },
   });
 

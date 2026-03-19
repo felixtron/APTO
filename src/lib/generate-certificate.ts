@@ -15,6 +15,15 @@ export interface CertificateData {
   presidentName: string;
 }
 
+export interface TrainingCertificateData {
+  memberName: string;
+  memberNumber: string;
+  certificateId: string;
+  eventTitle: string;
+  eventDate: Date;
+  presidentName: string;
+}
+
 export interface CertificateResult {
   pdfBytes: Uint8Array;
   sha256Hash: string;
@@ -187,8 +196,8 @@ export async function createMembershipCertificate(memberId: string) {
   const type = "membership";
 
   // Check if certificate already exists for this member/type/year
-  const existing = await prisma.certificate.findUnique({
-    where: { memberId_type_year: { memberId, type, year } },
+  const existing = await prisma.certificate.findFirst({
+    where: { memberId, type, year, eventId: null },
   });
 
   if (existing) return; // Already has a certificate for this period
@@ -211,6 +220,149 @@ export async function createMembershipCertificate(memberId: string) {
       status: "ACTIVE",
       issuedAt: new Date(),
       expiresAt,
+    },
+  });
+}
+
+export async function generateTrainingCertificatePdf(
+  data: TrainingCertificateData
+): Promise<CertificateResult> {
+  const templateBytes = loadTemplate();
+  const doc = await PDFDocument.load(templateBytes);
+  doc.registerFontkit(fontkit);
+
+  const page = doc.getPages()[0];
+  const pageWidth = page.getWidth();
+  const pageHeight = page.getHeight();
+  const centerX = pageWidth / 2;
+
+  const interRegular = await doc.embedFont(loadFont("Inter-Regular.ttf"));
+  const interBold = await doc.embedFont(loadFont("Inter-Bold.ttf"));
+  const loraBoldItalic = await doc.embedFont(loadFont("Lora-BoldItalic.ttf"));
+
+  // ── "CONSTANCIA:" ──
+  drawCentered(page, "CONSTANCIA:", pageHeight - 150, 30, loraBoldItalic, DARK);
+
+  // ── Member Name ──
+  drawCentered(page, data.memberName, pageHeight - 200, 26, interBold, DARK);
+
+  // ── Event participation text ──
+  drawCentered(page, "Por su participación en:", pageHeight - 240, 13, interRegular, GRAY);
+
+  // ── Event title ──
+  const titleSize = data.eventTitle.length > 50 ? 14 : 16;
+  drawCentered(page, data.eventTitle, pageHeight - 260, titleSize, interBold, DARK);
+
+  // ── Event date ──
+  const dateStr = `${data.eventDate.getDate()} de ${MONTHS_ES[data.eventDate.getMonth()]} de ${data.eventDate.getFullYear()}`;
+  drawCentered(page, dateStr, pageHeight - 280, 12, interRegular, GRAY);
+
+  // ── Signature line ──
+  const signY = pageHeight - 330;
+  page.drawLine({
+    start: { x: centerX - 100, y: signY },
+    end: { x: centerX + 100, y: signY },
+    thickness: 0.8,
+    color: rgb(0.7, 0.7, 0.7),
+  });
+
+  drawCentered(page, data.presidentName, signY - 16, 11, interBold, DARK);
+  drawCentered(page, "Presidente", signY - 30, 10, interRegular, GRAY);
+
+  // ── QR Code (bottom-left) ──
+  const margin = 20;
+  const verificationUrl = buildVerificationUrl(data.certificateId);
+  try {
+    const qrDataUrl = await QRCode.toDataURL(verificationUrl, {
+      width: 200,
+      margin: 1,
+      color: { dark: "#2E6DA4", light: "#FFFFFF" },
+    });
+    const qrBase64 = qrDataUrl.split(",")[1];
+    const qrImageBytes = Uint8Array.from(atob(qrBase64), (c) => c.charCodeAt(0));
+    const qrImage = await doc.embedPng(qrImageBytes);
+    const qrSize = 60;
+    page.drawImage(qrImage, {
+      x: margin + 10,
+      y: margin + 8,
+      width: qrSize,
+      height: qrSize,
+    });
+    const verifyLabel = "Verificar en línea";
+    const verifyWidth = interRegular.widthOfTextAtSize(verifyLabel, 6);
+    page.drawText(verifyLabel, {
+      x: margin + 10 + qrSize / 2 - verifyWidth / 2,
+      y: margin + 2,
+      size: 6,
+      font: interRegular,
+      color: GRAY,
+    });
+  } catch {
+    // QR generation failed — continue without it
+  }
+
+  // ── Folio (bottom-center) ──
+  const folioText = `Folio: ${data.certificateId}`;
+  const folioWidth = interRegular.widthOfTextAtSize(folioText, 8);
+  page.drawText(folioText, {
+    x: centerX - folioWidth / 2,
+    y: margin + 14,
+    size: 8,
+    font: interRegular,
+    color: GRAY,
+  });
+
+  const urlText = verificationUrl;
+  const urlWidth = interRegular.widthOfTextAtSize(urlText, 6);
+  page.drawText(urlText, {
+    x: centerX - urlWidth / 2,
+    y: margin + 4,
+    size: 6,
+    font: interRegular,
+    color: rgb(0.55, 0.55, 0.55),
+  });
+
+  // ── Número de socio (bottom-right) ──
+  const socioText = `No. de socio: ${data.memberNumber}`;
+  const socioWidth = interRegular.widthOfTextAtSize(socioText, 9);
+  page.drawText(socioText, {
+    x: pageWidth - margin - 10 - socioWidth,
+    y: margin + 18,
+    size: 9,
+    font: interRegular,
+    color: DARK,
+  });
+
+  const pdfBytes = await doc.save();
+  const sha256Hash = sha256(pdfBytes);
+  return { pdfBytes, sha256Hash };
+}
+
+/**
+ * Create a training certificate for a member who completed an event (idempotent).
+ */
+export async function createTrainingCertificate(memberId: string, eventId: string) {
+  const year = new Date().getFullYear();
+  const type = "training";
+
+  const existing = await prisma.certificate.findFirst({
+    where: { memberId, type, year, eventId },
+  });
+
+  if (existing) return;
+
+  const count = await prisma.certificate.count({ where: { year } });
+  const certificateId = await generateCertificateId(year, count);
+
+  await prisma.certificate.create({
+    data: {
+      memberId,
+      eventId,
+      certificateId,
+      type,
+      year,
+      status: "ACTIVE",
+      issuedAt: new Date(),
     },
   });
 }
