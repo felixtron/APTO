@@ -123,7 +123,7 @@ export default function AdminGrabacionesPage() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Grabaciones</h1>
+        <h1 className="text-xl font-bold sm:text-2xl">Grabaciones</h1>
         <Button onClick={openCreate}>
           <Plus className="mr-1 h-4 w-4" />
           Nueva grabación
@@ -255,8 +255,50 @@ export default function AdminGrabacionesPage() {
         </div>
       )}
 
-      {/* Table */}
-      <div className="rounded-xl border bg-white">
+      {/* Mobile cards */}
+      <div className="space-y-3 sm:hidden">
+        {recordings.map((recording) => (
+          <div key={recording.id} className="rounded-xl border bg-white p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-50">
+                <Video className="h-4 w-4 text-brand-400" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-medium">{recording.title}</p>
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  {recording.category && (
+                    <Badge variant="secondary" className="text-[10px]">{recording.category}</Badge>
+                  )}
+                  <span>{recording.duration ? `${recording.duration} min` : "—"}</span>
+                  <Badge
+                    className={`text-[10px] ${recording.active ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-800"}`}
+                  >
+                    {recording.active ? "Activo" : "Inactivo"}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+            <div className="mt-3 flex gap-1 border-t pt-3">
+              <Button variant="ghost" size="sm" onClick={() => openEdit(recording)}>
+                <Pencil className="mr-1 h-3.5 w-3.5" />
+                Editar
+              </Button>
+              <Button variant="ghost" size="sm" className="text-red-600" onClick={() => handleDelete(recording.id)}>
+                <Trash2 className="mr-1 h-3.5 w-3.5" />
+                Eliminar
+              </Button>
+            </div>
+          </div>
+        ))}
+        {recordings.length === 0 && (
+          <div className="rounded-xl border bg-white py-8 text-center text-muted-foreground">
+            No hay grabaciones registradas. Agrega la primera.
+          </div>
+        )}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden rounded-xl border bg-white sm:block">
         <Table>
           <TableHeader>
             <TableRow>

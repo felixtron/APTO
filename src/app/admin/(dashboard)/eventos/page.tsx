@@ -165,7 +165,7 @@ export default function AdminEventosPage() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Eventos</h1>
+        <h1 className="text-xl font-bold sm:text-2xl">Eventos</h1>
         <Button onClick={openCreate}>
           <Plus className="mr-1 h-4 w-4" />
           Nuevo evento
@@ -331,7 +331,7 @@ export default function AdminEventosPage() {
                 className="mt-1"
               />
             </div>
-            <div className="flex items-end gap-6">
+            <div className="flex flex-wrap items-end gap-4 sm:gap-6">
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -367,8 +367,56 @@ export default function AdminEventosPage() {
         </div>
       )}
 
-      {/* Table */}
-      <div className="rounded-xl border bg-white">
+      {/* Mobile cards */}
+      <div className="space-y-3 sm:hidden">
+        {events.map((event) => (
+          <div key={event.id} className="rounded-xl border bg-white p-4">
+            <div className="flex items-start justify-between gap-2">
+              <p className="font-medium">{event.title}</p>
+              <Badge
+                className={`shrink-0 ${event.active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}
+              >
+                {event.active ? "Activo" : "Finalizado"}
+              </Badge>
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <span>
+                {new Date(event.scheduledAt).toLocaleDateString("es-MX", {
+                  day: "numeric", month: "short", year: "numeric",
+                  hour: "2-digit", minute: "2-digit",
+                })}
+              </span>
+              <Badge variant="secondary" className="text-[10px]">
+                {modalityLabels[event.modality] || event.modality}
+              </Badge>
+              {event.membersOnly && (
+                <Badge className="bg-blue-100 text-blue-800 text-[10px]">Solo miembros</Badge>
+              )}
+            </div>
+            <div className="mt-2 text-xs text-muted-foreground">
+              {event._count.registrations} registros
+            </div>
+            <div className="mt-3 flex gap-1 border-t pt-3">
+              <Button variant="ghost" size="sm" onClick={() => openEdit(event)}>
+                <Pencil className="mr-1 h-3.5 w-3.5" />
+                Editar
+              </Button>
+              <Button variant="ghost" size="sm" className="text-red-600" onClick={() => handleDelete(event.id)}>
+                <Trash2 className="mr-1 h-3.5 w-3.5" />
+                Eliminar
+              </Button>
+            </div>
+          </div>
+        ))}
+        {events.length === 0 && (
+          <div className="rounded-xl border bg-white py-8 text-center text-muted-foreground">
+            No hay eventos. Crea el primero.
+          </div>
+        )}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden rounded-xl border bg-white sm:block">
         <Table>
           <TableHeader>
             <TableRow>

@@ -125,7 +125,7 @@ export default function AdminNoticiasPage() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Noticias</h1>
+        <h1 className="text-xl font-bold sm:text-2xl">Noticias</h1>
         <Button onClick={openCreate}>
           <Plus className="mr-1 h-4 w-4" />
           Nueva noticia
@@ -191,7 +191,7 @@ export default function AdminNoticiasPage() {
                 <option value="CLASIFICADOS">Clasificados</option>
               </select>
             </div>
-            <div className="flex items-end gap-6">
+            <div className="flex flex-wrap items-end gap-4 sm:gap-6">
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -227,8 +227,49 @@ export default function AdminNoticiasPage() {
         </div>
       )}
 
-      {/* Table */}
-      <div className="rounded-xl border bg-white">
+      {/* Mobile cards */}
+      <div className="space-y-3 sm:hidden">
+        {posts.map((post) => (
+          <div key={post.id} className="rounded-xl border bg-white p-4">
+            <div className="flex items-start justify-between gap-2">
+              <p className="font-medium">{post.title}</p>
+              <Badge
+                className={`shrink-0 ${post.published ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"}`}
+              >
+                {post.published ? "Publicado" : "Borrador"}
+              </Badge>
+            </div>
+            <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+              <Badge variant="secondary" className="text-[10px]">
+                {categoryLabels[post.category] || post.category}
+              </Badge>
+              <span>
+                {new Date(post.createdAt).toLocaleDateString("es-MX", {
+                  day: "numeric", month: "short", year: "numeric",
+                })}
+              </span>
+            </div>
+            <div className="mt-3 flex gap-1 border-t pt-3">
+              <Button variant="ghost" size="sm" onClick={() => openEdit(post)}>
+                <Pencil className="mr-1 h-3.5 w-3.5" />
+                Editar
+              </Button>
+              <Button variant="ghost" size="sm" className="text-red-600" onClick={() => handleDelete(post.id)}>
+                <Trash2 className="mr-1 h-3.5 w-3.5" />
+                Eliminar
+              </Button>
+            </div>
+          </div>
+        ))}
+        {posts.length === 0 && (
+          <div className="rounded-xl border bg-white py-8 text-center text-muted-foreground">
+            No hay noticias. Crea la primera.
+          </div>
+        )}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden rounded-xl border bg-white sm:block">
         <Table>
           <TableHeader>
             <TableRow>

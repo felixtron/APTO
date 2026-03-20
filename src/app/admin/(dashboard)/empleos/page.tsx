@@ -146,7 +146,7 @@ export default function AdminEmpleosPage() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Bolsa de Trabajo</h1>
+        <h1 className="text-xl font-bold sm:text-2xl">Bolsa de Trabajo</h1>
         <Button onClick={openCreate}>
           <Plus className="mr-1 h-4 w-4" />
           Nueva oferta
@@ -290,7 +290,7 @@ export default function AdminEmpleosPage() {
                 className="mt-1"
               />
             </div>
-            <div className="flex items-center gap-6 sm:col-span-2">
+            <div className="flex flex-wrap items-center gap-4 sm:gap-6 sm:col-span-2">
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
@@ -326,8 +326,49 @@ export default function AdminEmpleosPage() {
         </div>
       )}
 
-      {/* Table */}
-      <div className="rounded-xl border bg-white">
+      {/* Mobile cards */}
+      <div className="space-y-3 sm:hidden">
+        {jobs.map((job) => (
+          <div key={job.id} className="rounded-xl border bg-white p-4">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="font-medium">{job.title}</p>
+                <p className="text-sm text-muted-foreground">{job.company}</p>
+              </div>
+              {job.active && !isExpired(job.expiresAt) ? (
+                <Badge className="shrink-0 bg-green-100 text-green-800">Activo</Badge>
+              ) : (
+                <Badge className="shrink-0 bg-gray-100 text-gray-800">Expirado</Badge>
+              )}
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <span>{job.location}</span>
+              <Badge variant="secondary" className="text-[10px]">
+                {JOB_TYPE_LABELS[job.type] || job.type}
+              </Badge>
+              <span>Vence: {new Date(job.expiresAt).toLocaleDateString("es-MX")}</span>
+            </div>
+            <div className="mt-3 flex gap-1 border-t pt-3">
+              <Button variant="ghost" size="sm" onClick={() => openEdit(job)}>
+                <Pencil className="mr-1 h-3.5 w-3.5" />
+                Editar
+              </Button>
+              <Button variant="ghost" size="sm" className="text-red-600" onClick={() => handleDelete(job.id)}>
+                <Trash2 className="mr-1 h-3.5 w-3.5" />
+                Eliminar
+              </Button>
+            </div>
+          </div>
+        ))}
+        {jobs.length === 0 && (
+          <div className="rounded-xl border bg-white py-8 text-center text-muted-foreground">
+            No hay empleos publicados. Agrega el primero.
+          </div>
+        )}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden rounded-xl border bg-white sm:block">
         <Table>
           <TableHeader>
             <TableRow>

@@ -33,8 +33,8 @@ export default async function ConstanciasPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold">Constancias</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-xl font-bold sm:text-2xl">Constancias</h1>
+        <p className="text-sm text-muted-foreground sm:text-base">
           Descarga tus constancias de membresía y capacitación verificables
         </p>
         {member?.memberNumber && (
@@ -66,15 +66,15 @@ export default async function ConstanciasPage() {
           return (
             <div
               key={cert.id}
-              className="flex items-center justify-between rounded-xl border bg-white p-5"
+              className="flex flex-col gap-3 rounded-xl border bg-white p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5"
             >
-              <div className="flex items-center gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50">
+              <div className="flex items-start gap-3 sm:items-center sm:gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-50">
                   <Award className="h-5 w-5 text-brand-500" />
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-sm font-semibold sm:text-base">
                       {cert.type === "membership"
                         ? "Constancia de Membresía"
                         : cert.type === "training"
@@ -84,11 +84,11 @@ export default async function ConstanciasPage() {
                     <Badge variant={st.variant}>{st.label}</Badge>
                   </div>
                   {cert.event && (
-                    <p className="mt-0.5 text-sm text-muted-foreground">
+                    <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">
                       {cert.event.title}
                     </p>
                   )}
-                  <div className="mt-0.5 flex items-center gap-3 text-sm text-muted-foreground">
+                  <div className="mt-0.5 flex items-center gap-3 text-xs text-muted-foreground sm:text-sm">
                     <span>{cert.year}</span>
                     <span className="flex items-center gap-1">
                       <ShieldCheck className="h-3.5 w-3.5" />
@@ -97,13 +97,15 @@ export default async function ConstanciasPage() {
                   </div>
                 </div>
               </div>
-              {cert.status === "ACTIVE" ? (
-                <DownloadButton certificateId={cert.id} />
-              ) : (
-                <span className="text-sm text-muted-foreground">
-                  No disponible
-                </span>
-              )}
+              <div className="self-end sm:self-auto">
+                {cert.status === "ACTIVE" ? (
+                  <DownloadButton certificateId={cert.id} />
+                ) : (
+                  <span className="text-sm text-muted-foreground">
+                    No disponible
+                  </span>
+                )}
+              </div>
             </div>
           );
         })}

@@ -110,7 +110,7 @@ export default async function AdminMiembrosPage({
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Miembros</h1>
+        <h1 className="text-xl font-bold sm:text-2xl">Miembros</h1>
       </div>
 
       <div className="mb-6">
@@ -146,8 +146,54 @@ export default async function AdminMiembrosPage({
         </Suspense>
       </div>
 
-      {/* Table */}
-      <div className="rounded-xl border bg-white">
+      {/* Mobile cards */}
+      <div className="space-y-3 sm:hidden">
+        {members.map((member) => (
+          <div key={member.id} className="rounded-xl border bg-white p-4">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="font-medium truncate">{member.name}</p>
+                <p className="text-sm text-muted-foreground truncate">{member.email}</p>
+              </div>
+              <Badge
+                className={`shrink-0 ${statusColors[member.status] ?? "bg-gray-100 text-gray-800"}`}
+              >
+                {statusLabels[member.status] ?? member.status}
+              </Badge>
+            </div>
+            <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+              <span>Desde: {format(member.createdAt, "d MMM yyyy", { locale: es })}</span>
+              <span>
+                Vence:{" "}
+                {member.subscriptionEnd
+                  ? format(member.subscriptionEnd, "d MMM yyyy", { locale: es })
+                  : "---"}
+              </span>
+            </div>
+            <div className="mt-3 border-t pt-3">
+              <MemberActions
+                member={{
+                  id: member.id, name: member.name, email: member.email,
+                  phone: member.phone, memberNumber: member.memberNumber,
+                  type: member.type, status: member.status,
+                  institution: member.institution, cedula: member.cedula,
+                  specialty: member.specialty,
+                  subscriptionEnd: member.subscriptionEnd ? member.subscriptionEnd.toISOString() : null,
+                  createdAt: member.createdAt.toISOString(),
+                }}
+              />
+            </div>
+          </div>
+        ))}
+        {members.length === 0 && (
+          <div className="rounded-xl border bg-white py-8 text-center text-muted-foreground">
+            No hay miembros registrados
+          </div>
+        )}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden rounded-xl border bg-white sm:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -224,7 +270,7 @@ export default async function AdminMiembrosPage({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="mt-4 flex items-center justify-between">
+        <div className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:justify-between">
           <p className="text-sm text-muted-foreground">
             Mostrando {(currentPage - 1) * PAGE_SIZE + 1}-
             {Math.min(currentPage * PAGE_SIZE, totalCount)} de {totalCount}

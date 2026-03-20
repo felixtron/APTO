@@ -91,20 +91,24 @@ export default async function MiembrosLayout({
             </Link>
             <LogoutButton variant="mobile" />
           </div>
-          <nav className="mt-3 flex gap-2 overflow-x-auto">
-            {sidebarLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="shrink-0 rounded-full border px-3 py-1 text-xs text-muted-foreground hover:bg-muted"
-              >
-                {link.label}
-              </Link>
-            ))}
+          <nav className="mt-3 flex gap-2 overflow-x-auto pb-1 -mb-1">
+            {sidebarLinks.map((link) => {
+              const Icon = link.icon;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted active:bg-muted"
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {link.label}
+                </Link>
+              );
+            })}
           </nav>
         </div>
 
-        <div className="p-6 lg:p-8">{children}</div>
+        <div className="p-4 sm:p-6 lg:p-8">{children}</div>
       </main>
     </div>
   );

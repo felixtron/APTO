@@ -70,10 +70,10 @@ export default async function MiembrosDashboard({
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold">
+        <h1 className="text-xl font-bold sm:text-2xl">
           Bienvenido, {member.name?.split(" ")[0]}
         </h1>
-        <p className="text-muted-foreground">Tu portal de miembro APTO</p>
+        <p className="text-sm text-muted-foreground sm:text-base">Tu portal de miembro APTO</p>
       </div>
 
       {checkoutSuccess && (
