@@ -58,9 +58,11 @@ const faqs = [
 
 export default function MembresiaPage() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleCheckout(plan: "student" | "professional") {
     setLoadingPlan(plan);
+    setError(null);
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
@@ -70,10 +72,12 @@ export default function MembresiaPage() {
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
+      } else {
+        setError("No se pudo iniciar el proceso de pago. Intenta de nuevo.");
+        setLoadingPlan(null);
       }
-    } catch (error) {
-      console.error("Checkout error:", error);
-    } finally {
+    } catch {
+      setError("Error de conexión. Intenta de nuevo.");
       setLoadingPlan(null);
     }
   }
@@ -97,6 +101,11 @@ export default function MembresiaPage() {
       {/* Plans */}
       <section className="bg-white">
         <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
+          {error && (
+            <div className="mb-8 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-center text-sm text-red-700">
+              {error}
+            </div>
+          )}
           <div className="grid gap-8 sm:grid-cols-2">
             {plans.map((plan) => (
               <div

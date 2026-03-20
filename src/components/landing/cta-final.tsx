@@ -1,8 +1,30 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 
 export function CtaFinal() {
+  const [loading, setLoading] = useState(false);
+
+  async function handleCheckout() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: "professional" }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch {
+      setLoading(false);
+    }
+  }
+
   return (
     <section className="bg-gradient-to-r from-brand-600 to-brand-500">
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
@@ -20,10 +42,20 @@ export function CtaFinal() {
               size="lg"
               variant="secondary"
               className="bg-white text-brand-600 hover:bg-white/90"
-              render={<Link href="/membresia" />}
+              disabled={loading}
+              onClick={handleCheckout}
             >
-              Hazte Miembro
-              <ArrowRight className="ml-2 h-4 w-4" />
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Procesando...
+                </>
+              ) : (
+                <>
+                  Hazte Miembro
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </>
+              )}
             </Button>
             <Button
               size="lg"

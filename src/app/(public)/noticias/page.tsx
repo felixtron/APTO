@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
@@ -108,11 +109,13 @@ export default async function NoticiasPage({
                   className="group rounded-xl border p-6 transition-all hover:shadow-md"
                 >
                   {post.coverImage ? (
-                    <div className="aspect-video overflow-hidden rounded-lg">
-                      <img
+                    <div className="relative aspect-video overflow-hidden rounded-lg">
+                      <Image
                         src={post.coverImage}
                         alt={post.title}
-                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        className="object-cover transition-transform group-hover:scale-105"
                       />
                     </div>
                   ) : (

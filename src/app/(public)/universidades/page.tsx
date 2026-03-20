@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { GraduationCap, MapPin, Globe } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { prisma } from "@/lib/prisma";
@@ -39,9 +40,11 @@ export default async function UniversidadesPage() {
                 >
                   <div className="flex items-start gap-4">
                     {uni.logoUrl ? (
-                      <img
+                      <Image
                         src={uni.logoUrl}
                         alt={uni.shortName || uni.name}
+                        width={48}
+                        height={48}
                         className="h-12 w-12 shrink-0 rounded-xl object-contain"
                       />
                     ) : (

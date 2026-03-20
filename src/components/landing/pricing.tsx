@@ -1,6 +1,8 @@
-import Link from "next/link";
+"use client";
+
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Check } from "lucide-react";
+import { Check, ArrowRight, Loader2 } from "lucide-react";
 
 const sharedFeatures = [
   "Membresía individual WFOT",
@@ -18,6 +20,7 @@ const sharedFeatures = [
 const plans = [
   {
     name: "Estudiante",
+    plan: "student" as const,
     price: "$300",
     period: "MXN / año",
     description: "Para estudiantes de Terapia Ocupacional",
@@ -25,6 +28,7 @@ const plans = [
   },
   {
     name: "Profesional",
+    plan: "professional" as const,
     price: "$800",
     period: "MXN / año",
     description: "Para Terapeutas Ocupacionales titulados",
@@ -34,6 +38,31 @@ const plans = [
 ];
 
 export function Pricing() {
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleCheckout(plan: "student" | "professional") {
+    setLoadingPlan(plan);
+    setError(null);
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setError("No se pudo iniciar el proceso de pago. Intenta de nuevo.");
+        setLoadingPlan(null);
+      }
+    } catch {
+      setError("Error de conexión. Intenta de nuevo.");
+      setLoadingPlan(null);
+    }
+  }
+
   return (
     <section className="bg-white">
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
@@ -45,6 +74,12 @@ export function Pricing() {
             Invierte en tu desarrollo profesional
           </p>
         </div>
+
+        {error && (
+          <div className="mx-auto mt-6 max-w-md rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-center text-sm text-red-700">
+            {error}
+          </div>
+        )}
 
         <div className="mx-auto mt-12 grid max-w-3xl gap-8 sm:grid-cols-2">
           {plans.map((plan) => (
@@ -85,9 +120,20 @@ export function Pricing() {
                 className="mt-8 w-full"
                 size="lg"
                 variant={plan.highlight ? "default" : "outline"}
-                render={<Link href="/membresia" />}
+                disabled={loadingPlan !== null}
+                onClick={() => handleCheckout(plan.plan)}
               >
-                Inscribirse
+                {loadingPlan === plan.plan ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Procesando...
+                  </>
+                ) : (
+                  <>
+                    Inscribirse
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
               </Button>
             </div>
           ))}

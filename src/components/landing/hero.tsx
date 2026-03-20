@@ -2,11 +2,39 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
-import { LiquidGradient } from "@/components/landing/liquid-gradient";
+import { ArrowRight, Loader2 } from "lucide-react";
+import dynamic from "next/dynamic";
+
+const LiquidGradient = dynamic(
+  () =>
+    import("@/components/landing/liquid-gradient").then(
+      (mod) => mod.LiquidGradient
+    ),
+  { ssr: false }
+);
 
 export function Hero() {
+  const [loading, setLoading] = useState(false);
+
+  async function handleCheckout() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: "professional" }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch {
+      setLoading(false);
+    }
+  }
+
   return (
     <section className="relative overflow-hidden" style={{ minHeight: "90vh" }}>
       {/* Interactive liquid gradient background */}
@@ -27,11 +55,21 @@ export function Hero() {
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Button
               size="lg"
-              render={<Link href="/membresia" />}
               className="bg-white text-brand-700 hover:bg-blue-50 font-bold shadow-lg"
+              disabled={loading}
+              onClick={handleCheckout}
             >
-              Hazte Miembro
-              <ArrowRight className="ml-2 h-4 w-4" />
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Procesando...
+                </>
+              ) : (
+                <>
+                  Hazte Miembro
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </>
+              )}
             </Button>
             <Button
               size="lg"
