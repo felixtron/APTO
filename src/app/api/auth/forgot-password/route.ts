@@ -27,7 +27,7 @@ export async function POST(request: Request) {
       const from = process.env.RESEND_FROM || "APTO <noreply@apto.org.mx>";
 
       const resend = getResend();
-      await resend.emails.send({
+      const { data, error } = await resend.emails.send({
         from,
         to: member.email,
         subject: "Restablecer contraseña — APTO",
@@ -40,6 +40,12 @@ export async function POST(request: Request) {
           <p>Si no solicitaste este cambio, ignora este correo.</p>
         `,
       });
+
+      if (error) {
+        console.error("Resend error (forgot-password):", error);
+      } else {
+        console.log("Password reset email sent:", data?.id, "to:", member.email);
+      }
     }
 
     // Always return success to avoid revealing if email exists
