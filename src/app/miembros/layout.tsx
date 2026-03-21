@@ -11,6 +11,7 @@ import {
   Briefcase,
 } from "lucide-react";
 import { LogoutButton } from "./logout-button";
+import { MemberMobileNav } from "./member-mobile-nav";
 
 const sidebarLinks = [
   { href: "/miembros", label: "Dashboard", icon: LayoutDashboard },
@@ -34,7 +35,7 @@ export default async function MiembrosLayout({
 
   return (
     <div className="flex min-h-screen">
-      {/* Sidebar */}
+      {/* Sidebar — desktop only */}
       <aside className="hidden w-64 border-r bg-white lg:block">
         <div className="flex h-full flex-col">
           <div className="border-b p-4">
@@ -77,36 +78,11 @@ export default async function MiembrosLayout({
 
       {/* Main content */}
       <main className="flex-1 bg-muted/30">
-        {/* Mobile header */}
-        <div className="border-b bg-white px-4 py-3 lg:hidden">
-          <div className="flex items-center justify-between">
-            <Link href="/">
-              <Image
-                src="/logo/logoAPTO.png"
-                alt="APTO"
-                width={100}
-                height={40}
-                className="h-8 w-auto"
-              />
-            </Link>
-            <LogoutButton variant="mobile" />
-          </div>
-          <nav className="mt-3 flex gap-2 overflow-x-auto pb-1 -mb-1">
-            {sidebarLinks.map((link) => {
-              const Icon = link.icon;
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted active:bg-muted"
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  {link.label}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
+        {/* Mobile header — Sheet drawer nav */}
+        <MemberMobileNav
+          userName={session.user.name}
+          userEmail={session.user.email}
+        />
 
         <div className="p-4 sm:p-6 lg:p-8">{children}</div>
       </main>
