@@ -18,13 +18,16 @@ export function StripeModeToggle() {
     if (!mode) return;
     const newMode: StripeMode = mode === "test" ? "live" : "test";
 
-    if (
-      newMode === "live" &&
-      !confirm(
-        "¿Cambiar a modo PRODUCCIÓN?\n\nLos cobros serán REALES."
-      )
-    ) {
-      return;
+    if (newMode === "live") {
+      const confirmed = confirm(
+        "⚠️ CAMBIAR A MODO PRODUCCIÓN\n\n" +
+          "Los cobros serán REALES con tarjetas reales.\n\n" +
+          "Este cambio solo afecta a TU sesión (cookie de browser).\n" +
+          "Para activar producción de forma permanente, actualiza\n" +
+          "STRIPE_MODE=live en el .env del servidor.\n\n" +
+          "¿Continuar?"
+      );
+      if (!confirmed) return;
     }
 
     setSwitching(true);

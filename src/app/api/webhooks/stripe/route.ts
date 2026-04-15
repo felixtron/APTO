@@ -3,7 +3,7 @@ import { getStripeForMode, getStripeWebhookSecret } from "@/lib/stripe";
 import type { StripeMode } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import { createMembershipCertificate, createTrainingCertificate } from "@/lib/generate-certificate";
-import { sendEventConfirmationEmail } from "@/lib/emails";
+import { sendEventConfirmationEmail, sendPaymentFailedAlert } from "@/lib/emails";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import type Stripe from "stripe";
@@ -19,9 +19,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Try to verify with both modes — webhooks can come from either
+  // In live mode only accept live webhooks — prevents test events from creating
+  // real members or certificates. In test mode, try test first then live as fallback
+  // (useful during migration). Never accept test webhooks when STRIPE_MODE=live.
+  const envMode = (process.env.STRIPE_MODE as StripeMode) || "test";
+  const modesToTry: StripeMode[] =
+    envMode === "live" ? ["live"] : ["test", "live"];
+
   let event: Stripe.Event | undefined;
-  for (const mode of ["live", "test"] as StripeMode[]) {
+  for (const mode of modesToTry) {
     const secret =
       mode === "live"
         ? process.env.STRIPE_LIVE_WEBHOOK_SECRET
@@ -74,8 +80,9 @@ export async function POST(request: NextRequest) {
     }
 
     case "invoice.payment_failed": {
-      const invoice = event.data.object;
-      console.error(`Payment failed for invoice ${invoice.id}`);
+      const invoice = event.data.object as never;
+      console.error(`Payment failed for invoice ${(invoice as Record<string, unknown>).id}`);
+      await handleInvoiceFailed(invoice);
       break;
     }
   }
@@ -202,6 +209,35 @@ async function handleSubscriptionDeleted(
       subscriptionId: null,
     },
   });
+}
+
+async function handleInvoiceFailed(invoice: Record<string, unknown>) {
+  const subscription = invoice.subscription;
+  const subscriptionId =
+    typeof subscription === "string"
+      ? subscription
+      : (subscription as Record<string, unknown> | null)?.id as string | undefined;
+
+  let memberName: string | undefined;
+  let memberEmail: string | undefined;
+
+  if (subscriptionId) {
+    const member = await prisma.member.findFirst({
+      where: { subscriptionId },
+      select: { name: true, email: true },
+    });
+    if (member) {
+      memberName = member.name;
+      memberEmail = member.email;
+    }
+  }
+
+  sendPaymentFailedAlert({
+    invoiceId: (invoice.id as string | undefined) ?? "unknown",
+    memberName,
+    memberEmail,
+    amount: (invoice.amount_due as number | undefined),
+  }).catch(console.error);
 }
 
 async function handleInvoicePaid(

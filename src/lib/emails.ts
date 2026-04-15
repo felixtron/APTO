@@ -238,3 +238,60 @@ export async function sendEventConfirmationEmail(params: {
     console.error("Failed to send event confirmation email:", error);
   }
 }
+
+// ---------------------------------------------------------------------------
+// Admin payment failure alert
+// ---------------------------------------------------------------------------
+
+export async function sendPaymentFailedAlert(params: {
+  invoiceId: string;
+  memberName?: string;
+  memberEmail?: string;
+  amount?: number;
+}): Promise<void> {
+  const { invoiceId, memberName, memberEmail, amount } = params;
+  const adminEmail = CONTACT_EMAIL;
+  const stripeMode = process.env.STRIPE_MODE || "test";
+  const amountFormatted = amount
+    ? `$${(amount / 100).toLocaleString("es-MX")} MXN`
+    : "desconocido";
+
+  const html = emailLayout(`
+    <h2 style="margin:0 0 16px;color:#dc2626;font-size:20px;font-weight:600;">
+      Pago fallido en Stripe
+    </h2>
+    <p style="margin:0 0 16px;color:#374151;font-size:15px;line-height:1.6;">
+      Un pago de membres&iacute;a ha fallado. Revisa el dashboard de Stripe para m&aacute;s detalles.
+    </p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+           style="margin:0 0 24px;border:1px solid #fecaca;border-radius:6px;overflow:hidden;background:#fff7f7;">
+      <tr>
+        <td style="padding:8px 12px;font-size:14px;color:#6b7280;border-bottom:1px solid #fee2e2;width:140px;">Invoice ID</td>
+        <td style="padding:8px 12px;font-size:14px;color:#1f2937;border-bottom:1px solid #fee2e2;font-family:monospace;">${invoiceId}</td>
+      </tr>
+      ${memberName ? `<tr><td style="padding:8px 12px;font-size:14px;color:#6b7280;border-bottom:1px solid #fee2e2;">Miembro</td><td style="padding:8px 12px;font-size:14px;color:#1f2937;border-bottom:1px solid #fee2e2;">${memberName}</td></tr>` : ""}
+      ${memberEmail ? `<tr><td style="padding:8px 12px;font-size:14px;color:#6b7280;border-bottom:1px solid #fee2e2;">Email</td><td style="padding:8px 12px;font-size:14px;color:#1f2937;border-bottom:1px solid #fee2e2;">${memberEmail}</td></tr>` : ""}
+      <tr>
+        <td style="padding:8px 12px;font-size:14px;color:#6b7280;border-bottom:1px solid #fee2e2;">Monto</td>
+        <td style="padding:8px 12px;font-size:14px;color:#1f2937;border-bottom:1px solid #fee2e2;">${amountFormatted}</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 12px;font-size:14px;color:#6b7280;">Modo Stripe</td>
+        <td style="padding:8px 12px;font-size:14px;color:#1f2937;">${stripeMode === "live" ? "PRODUCCIÓN" : "PRUEBAS"}</td>
+      </tr>
+    </table>
+    ${buttonHtml("https://dashboard.stripe.com/invoices", "Ver en Stripe Dashboard")}
+  `);
+
+  try {
+    const resend = getResend();
+    await resend.emails.send({
+      from: FROM_ADDRESS,
+      to: adminEmail,
+      subject: `[APTO] Pago fallido — ${memberEmail || invoiceId}`,
+      html,
+    });
+  } catch (error) {
+    console.error("Failed to send payment failed alert:", error);
+  }
+}
