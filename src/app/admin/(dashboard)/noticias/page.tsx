@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, X } from "lucide-react";
+import { Plus, Pencil, Trash2, X, ImagePlus, Loader2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -39,6 +39,7 @@ const emptyForm = {
   title: "",
   excerpt: "",
   content: "",
+  coverImage: "",
   category: "NOTICIAS",
   published: false,
   featured: false,
@@ -51,6 +52,7 @@ export default function AdminNoticiasPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   async function fetchPosts() {
     const res = await fetch("/api/admin/posts");
@@ -74,6 +76,7 @@ export default function AdminNoticiasPage() {
       title: post.title,
       excerpt: post.excerpt,
       content: post.content,
+      coverImage: post.coverImage || "",
       category: post.category,
       published: post.published,
       featured: post.featured,
@@ -86,6 +89,23 @@ export default function AdminNoticiasPage() {
     setShowForm(false);
     setEditingId(null);
     setForm(emptyForm);
+  }
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingImage(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("folder", "noticias");
+      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (data.url) setForm((f) => ({ ...f, coverImage: data.url }));
+    } finally {
+      setUploadingImage(false);
+      e.target.value = "";
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -166,6 +186,53 @@ export default function AdminNoticiasPage() {
                 className="mt-1"
               />
             </div>
+            {/* Cover image */}
+            <div className="sm:col-span-2">
+              <Label>Imagen de portada</Label>
+              <div className="mt-1 flex items-start gap-4">
+                {/* Preview */}
+                <div className="h-24 w-40 shrink-0 overflow-hidden rounded-lg border bg-muted flex items-center justify-center">
+                  {form.coverImage ? (
+                    <img
+                      src={form.coverImage}
+                      alt="Portada"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <ImagePlus className="h-8 w-8 text-muted-foreground/40" />
+                  )}
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="sr-only"
+                      onChange={handleImageUpload}
+                      disabled={uploadingImage}
+                    />
+                    <span className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors">
+                      {uploadingImage ? (
+                        <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Subiendo...</>
+                      ) : (
+                        <><ImagePlus className="h-3.5 w-3.5" /> {form.coverImage ? "Cambiar imagen" : "Subir imagen"}</>
+                      )}
+                    </span>
+                  </label>
+                  {form.coverImage && (
+                    <button
+                      type="button"
+                      onClick={() => setForm((f) => ({ ...f, coverImage: "" }))}
+                      className="text-xs text-red-500 hover:text-red-700 text-left"
+                    >
+                      Quitar imagen
+                    </button>
+                  )}
+                  <p className="text-xs text-muted-foreground">JPG, PNG o WebP · máx. 10 MB</p>
+                </div>
+              </div>
+            </div>
+
             <div className="sm:col-span-2">
               <Label htmlFor="content">Contenido</Label>
               <textarea
