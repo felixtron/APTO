@@ -122,7 +122,23 @@ export async function NewsPreview() {
                 href={`/noticias/${post.slug}`}
                 className="group flex gap-4 border-b pb-6 last:border-0"
               >
-                <div className="flex-1">
+                {/* Thumbnail */}
+                <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-brand-100 to-brand-50">
+                  {post.coverImage ? (
+                    <Image
+                      src={post.coverImage}
+                      alt={post.title}
+                      width={80}
+                      height={80}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center">
+                      <span className="text-lg font-bold text-brand-200">A</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <Badge
                       variant="secondary"
@@ -137,7 +153,7 @@ export async function NewsPreview() {
                       {format(post.createdAt, "d MMM yyyy", { locale: es })}
                     </span>
                   </div>
-                  <h3 className="mt-2 text-sm font-semibold leading-snug group-hover:text-brand-500">
+                  <h3 className="mt-2 text-sm font-semibold leading-snug group-hover:text-brand-500 line-clamp-2">
                     {post.title}
                   </h3>
                   <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">

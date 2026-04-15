@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { EventRegistration } from "./event-registration";
 import { RegistroBanner } from "./registro-banner";
+import { renderTextContent } from "@/lib/content";
 
 const modalityLabels: Record<string, string> = {
   VIRTUAL: "Virtual",
@@ -215,7 +216,7 @@ export default async function EventoPage({
         <div className="mt-12 border-t pt-8">
           <div
             className="prose prose-neutral max-w-none"
-            dangerouslySetInnerHTML={{ __html: event.description }}
+            dangerouslySetInnerHTML={{ __html: renderTextContent(event.description) }}
           />
         </div>
       </div>

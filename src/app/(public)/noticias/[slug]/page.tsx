@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { renderTextContent } from "@/lib/content";
 
 const categoryColors: Record<string, string> = {
   NOTICIAS: "bg-brand-50 text-brand-700",
@@ -70,7 +71,7 @@ export default async function NoticiaPage({
         <div className="mt-8 border-t pt-8">
           <div
             className="prose prose-neutral max-w-none"
-            dangerouslySetInnerHTML={{ __html: post.content }}
+            dangerouslySetInnerHTML={{ __html: renderTextContent(post.content) }}
           />
         </div>
       </div>
