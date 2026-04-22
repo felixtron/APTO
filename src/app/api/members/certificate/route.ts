@@ -35,6 +35,18 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // Gate: requiere membresía activa y vigente
+  const memberActive =
+    certificate.member.status === "ACTIVE" &&
+    (!certificate.member.subscriptionEnd ||
+      certificate.member.subscriptionEnd.getTime() > Date.now());
+  if (!memberActive) {
+    return NextResponse.json(
+      { error: "Tu membresía no está activa. Renueva tu suscripción para descargar constancias." },
+      { status: 403 }
+    );
+  }
+
   const member = certificate.member;
 
   if (!member.memberNumber) {

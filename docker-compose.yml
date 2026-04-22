@@ -27,8 +27,8 @@ services:
     environment:
       DATABASE_URL: postgresql://apto:${DB_PASSWORD}@db:5432/apto
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
-      NEXT_PUBLIC_APP_URL: https://${APP_DOMAIN:-apto.prosuite.pro}
-      NEXTAUTH_URL: https://${APP_DOMAIN:-apto.prosuite.pro}
+      NEXT_PUBLIC_APP_URL: https://${APP_DOMAIN:-apto.org.mx}
+      NEXTAUTH_URL: https://${APP_DOMAIN:-apto.org.mx}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
       CERTIFICATE_SECRET: ${CERTIFICATE_SECRET:-}
       CRON_SECRET: ${CRON_SECRET:-}
@@ -64,11 +64,11 @@ services:
       - dokploy-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.apto.rule=Host(`${APP_DOMAIN:-apto.prosuite.pro}`)"
+      - "traefik.http.routers.apto.rule=Host(`${APP_DOMAIN:-apto.org.mx}`)"
       - "traefik.http.routers.apto.entrypoints=websecure"
       - "traefik.http.routers.apto.tls.certresolver=letsencrypt"
       - "traefik.http.services.apto.loadbalancer.server.port=3000"
-      - "traefik.http.routers.apto-http.rule=Host(`${APP_DOMAIN:-apto.prosuite.pro}`)"
+      - "traefik.http.routers.apto-http.rule=Host(`${APP_DOMAIN:-apto.org.mx}`)"
       - "traefik.http.routers.apto-http.entrypoints=web"
       - "traefik.http.routers.apto-http.middlewares=redirect-to-https"
       - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"

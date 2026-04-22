@@ -1,9 +1,27 @@
 export const dynamic = "force-dynamic";
 
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { DirectorySearch } from "./directory-search";
+import { getActiveMembership } from "@/lib/require-active-membership";
+import { MembershipRequired } from "../_components/membership-required";
 
 export default async function DirectorioPage() {
+  const membership = await getActiveMembership();
+  if (!membership) redirect("/auth/login");
+  if (!membership.isActive) {
+    return (
+      <MembershipRequired
+        sectionTitle="Directorio de Miembros"
+        sectionDescription="Encuentra colegas terapeutas ocupacionales"
+        memberId={membership.userId}
+        memberEmail={membership.email}
+        memberType={membership.memberType}
+        status={membership.status}
+      />
+    );
+  }
+
   const members = await prisma.member.findMany({
     where: { status: "ACTIVE" },
     select: {

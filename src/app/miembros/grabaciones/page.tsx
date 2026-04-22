@@ -1,9 +1,12 @@
 export const dynamic = "force-dynamic";
 
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui/badge";
 import { Play, Clock, ExternalLink } from "lucide-react";
 import Link from "next/link";
+import { getActiveMembership } from "@/lib/require-active-membership";
+import { MembershipRequired } from "../_components/membership-required";
 
 const categoryColors: Record<string, string> = {
   Congresos: "bg-brand-50 text-brand-700",
@@ -13,6 +16,21 @@ const categoryColors: Record<string, string> = {
 };
 
 export default async function GrabacionesPage() {
+  const membership = await getActiveMembership();
+  if (!membership) redirect("/auth/login");
+  if (!membership.isActive) {
+    return (
+      <MembershipRequired
+        sectionTitle="Grabaciones"
+        sectionDescription="Biblioteca de conferencias y sesiones exclusivas para miembros"
+        memberId={membership.userId}
+        memberEmail={membership.email}
+        memberType={membership.memberType}
+        status={membership.status}
+      />
+    );
+  }
+
   const recordings = await prisma.recording.findMany({
     where: { active: true },
     orderBy: [{ displayOrder: "asc" }, { createdAt: "desc" }],

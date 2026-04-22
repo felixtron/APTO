@@ -1,11 +1,12 @@
 export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Award, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DownloadButton } from "./download-button";
+import { getActiveMembership } from "@/lib/require-active-membership";
+import { MembershipRequired } from "../_components/membership-required";
 
 const statusLabels: Record<string, { label: string; variant: "default" | "secondary" | "destructive" }> = {
   ACTIVE: { label: "Vigente", variant: "default" },
@@ -14,16 +15,28 @@ const statusLabels: Record<string, { label: string; variant: "default" | "second
 };
 
 export default async function ConstanciasPage() {
-  const session = await auth();
-  if (!session?.user?.id) redirect("/auth/login");
+  const membership = await getActiveMembership();
+  if (!membership) redirect("/auth/login");
+  if (!membership.isActive) {
+    return (
+      <MembershipRequired
+        sectionTitle="Constancias"
+        sectionDescription="Descarga tus constancias de membresía y capacitación verificables"
+        memberId={membership.userId}
+        memberEmail={membership.email}
+        memberType={membership.memberType}
+        status={membership.status}
+      />
+    );
+  }
 
   const member = await prisma.member.findUnique({
-    where: { id: session.user.id },
+    where: { id: membership.userId },
     select: { status: true, memberNumber: true },
   });
 
   const certificates = await prisma.certificate.findMany({
-    where: { memberId: session.user.id },
+    where: { memberId: membership.userId },
     orderBy: { issuedAt: "desc" },
     include: { event: { select: { title: true } } },
   });

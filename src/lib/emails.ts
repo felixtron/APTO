@@ -15,6 +15,8 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://apto.org.mx";
 // Shared HTML helpers
 // ---------------------------------------------------------------------------
 
+const LOGO_URL = `${APP_URL}/logo/logoAPTO.png`;
+
 function emailLayout(body: string): string {
   return `<!DOCTYPE html>
 <html lang="es">
@@ -29,9 +31,9 @@ function emailLayout(body: string): string {
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:8px;overflow:hidden;">
           <!-- Header -->
           <tr>
-            <td style="background-color:#2E6DA4;padding:24px 32px;text-align:center;">
-              <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:700;letter-spacing:2px;">APTO</h1>
-              <p style="margin:4px 0 0;color:#d1e3f3;font-size:12px;letter-spacing:0.5px;">Asociaci&oacute;n de Profesionales en Terapia Ocupacional</p>
+            <td style="background-color:#ffffff;padding:28px 32px 20px;text-align:center;border-bottom:3px solid #2E6DA4;">
+              <img src="${LOGO_URL}" alt="APTO — Asociaci&oacute;n de Profesionales en Terapia Ocupacional" width="180" style="display:block;margin:0 auto;max-width:180px;height:auto;border:0;outline:none;text-decoration:none;" />
+              <p style="margin:12px 0 0;color:#2E6DA4;font-size:12px;letter-spacing:1px;text-transform:uppercase;font-weight:600;">Asociaci&oacute;n de Profesionales en Terapia Ocupacional</p>
             </td>
           </tr>
           <!-- Body -->
@@ -236,6 +238,164 @@ export async function sendEventConfirmationEmail(params: {
     });
   } catch (error) {
     console.error("Failed to send event confirmation email:", error);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Anniversary email — 27 de abril, aniversario de la fundación (1993)
+// ---------------------------------------------------------------------------
+
+const FOUNDED_YEAR_EMAIL = 1993;
+
+export function buildAnniversaryEmailHtml(params?: {
+  name?: string;
+  year?: number;
+}): string {
+  const year = params?.year ?? new Date().getFullYear();
+  const anniversaryNumber = year - FOUNDED_YEAR_EMAIL;
+  const greeting = params?.name
+    ? `Estimado/a ${params.name.split(" ")[0]}`
+    : "Estimado/a colega";
+
+  return emailLayout(`
+    <!-- Hero aniversario -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+           style="margin:0 0 24px;background:linear-gradient(135deg,#2E6DA4 0%,#2D7A3A 100%);border-radius:8px;">
+      <tr>
+        <td style="padding:32px 24px;text-align:center;">
+          <p style="margin:0 0 8px;color:#d1e3f3;font-size:13px;letter-spacing:2px;text-transform:uppercase;font-weight:600;">
+            27 de abril &bull; ${year}
+          </p>
+          <h1 style="margin:0 0 8px;color:#ffffff;font-size:38px;font-weight:800;line-height:1.1;">
+            ${anniversaryNumber} a&ntilde;os
+          </h1>
+          <p style="margin:0;color:#ffffff;font-size:16px;font-weight:500;line-height:1.4;">
+            impulsando la Terapia Ocupacional en M&eacute;xico
+          </p>
+        </td>
+      </tr>
+    </table>
+
+    <h2 style="margin:0 0 16px;color:#1f2937;font-size:22px;font-weight:700;line-height:1.3;">
+      &iexcl;Celebramos juntos nuestro ${anniversaryNumber}&ordm; aniversario!
+    </h2>
+
+    <p style="margin:0 0 16px;color:#374151;font-size:15px;line-height:1.65;">
+      ${greeting}:
+    </p>
+
+    <p style="margin:0 0 16px;color:#374151;font-size:15px;line-height:1.65;">
+      El pr&oacute;ximo <strong>27 de abril</strong> conmemoramos un nuevo aniversario de la fundaci&oacute;n
+      de la <strong>Asociaci&oacute;n de Profesionales en Terapia Ocupacional (APTO)</strong>. Desde ${FOUNDED_YEAR_EMAIL}
+      hemos trabajado para fortalecer nuestra profesi&oacute;n, y hoy queremos dar un paso m&aacute;s contigo.
+    </p>
+
+    <p style="margin:0 0 24px;color:#374151;font-size:15px;line-height:1.65;">
+      Nos complace invitarte &mdash;ya seas <strong>asociado/a, estudiante o exasociado/a</strong>&mdash;
+      a registrarte en nuestra <strong>nueva plataforma digital</strong>, dise&ntilde;ada para
+      acompa&ntilde;arte en cada etapa de tu desarrollo profesional.
+    </p>
+
+    <!-- Tarjeta de beneficios -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+           style="margin:0 0 28px;background-color:#f9fafb;border:1px solid #e5e7eb;border-left:4px solid #2D7A3A;border-radius:6px;">
+      <tr>
+        <td style="padding:22px 24px;">
+          <p style="margin:0 0 14px;color:#2E6DA4;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;">
+            En el nuevo portal podr&aacute;s
+          </p>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="padding:6px 0;vertical-align:top;width:32px;">
+                <span style="display:inline-block;width:24px;height:24px;background-color:#2E6DA4;color:#ffffff;border-radius:50%;text-align:center;font-size:13px;font-weight:700;line-height:24px;">1</span>
+              </td>
+              <td style="padding:6px 0 6px 10px;color:#1f2937;font-size:15px;line-height:1.5;">
+                Consultar las <strong>noticias m&aacute;s importantes</strong> de la profesi&oacute;n y del gremio.
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:6px 0;vertical-align:top;">
+                <span style="display:inline-block;width:24px;height:24px;background-color:#2E6DA4;color:#ffffff;border-radius:50%;text-align:center;font-size:13px;font-weight:700;line-height:24px;">2</span>
+              </td>
+              <td style="padding:6px 0 6px 10px;color:#1f2937;font-size:15px;line-height:1.5;">
+                Estar al tanto de los <strong>pr&oacute;ximos eventos</strong>, congresos, talleres y cursos.
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:6px 0;vertical-align:top;">
+                <span style="display:inline-block;width:24px;height:24px;background-color:#2E6DA4;color:#ffffff;border-radius:50%;text-align:center;font-size:13px;font-weight:700;line-height:24px;">3</span>
+              </td>
+              <td style="padding:6px 0 6px 10px;color:#1f2937;font-size:15px;line-height:1.5;">
+                Acceder a tu <strong>&aacute;rea personal</strong> para descargar tus <strong>constancias y certificados</strong> cuando los necesites.
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:6px 0;vertical-align:top;">
+                <span style="display:inline-block;width:24px;height:24px;background-color:#2D7A3A;color:#ffffff;border-radius:50%;text-align:center;font-size:13px;font-weight:700;line-height:24px;">4</span>
+              </td>
+              <td style="padding:6px 0 6px 10px;color:#1f2937;font-size:15px;line-height:1.5;">
+                Disfrutar de <strong>todas las ventajas</strong> que esta herramienta tiene reservadas para la comunidad APTO.
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
+    <h3 style="margin:0 0 12px;color:#1f2937;font-size:17px;font-weight:700;">
+      Tres pasos para formar parte
+    </h3>
+    <p style="margin:0 0 8px;color:#374151;font-size:15px;line-height:1.65;">
+      <strong style="color:#2E6DA4;">1.</strong> Crea tu cuenta en la plataforma.<br/>
+      <strong style="color:#2E6DA4;">2.</strong> Realiza el pago de tu <strong>suscripci&oacute;n anual</strong>
+      (profesional $800 MXN &bull; estudiante $300 MXN).<br/>
+      <strong style="color:#2E6DA4;">3.</strong> Comienza a disfrutar todos los beneficios de inmediato.
+    </p>
+
+    ${buttonHtml(`${APP_URL}/auth/registro`, "Registrarme ahora →")}
+
+    <p style="margin:0 0 8px;color:#374151;font-size:14px;line-height:1.6;text-align:center;">
+      &iquest;Ya tienes cuenta?
+      <a href="${APP_URL}/auth/login" style="color:#2E6DA4;text-decoration:underline;font-weight:600;">Inicia sesi&oacute;n</a>
+      o revisa los
+      <a href="${APP_URL}/membresia" style="color:#2E6DA4;text-decoration:underline;font-weight:600;">planes de membres&iacute;a</a>.
+    </p>
+
+    <hr style="border:none;border-top:1px solid #e5e7eb;margin:28px 0;" />
+
+    <p style="margin:0 0 8px;color:#6b7280;font-size:14px;line-height:1.6;font-style:italic;text-align:center;">
+      Gracias por caminar con nosotros estos ${anniversaryNumber} a&ntilde;os.<br/>
+      El futuro de la Terapia Ocupacional en M&eacute;xico lo seguimos construyendo juntos.
+    </p>
+
+    <p style="margin:16px 0 0;color:#1f2937;font-size:14px;line-height:1.6;text-align:center;font-weight:600;">
+      Con aprecio,<br/>
+      <span style="color:#2E6DA4;">Mesa Directiva APTO</span>
+    </p>
+  `);
+}
+
+export async function sendAnniversaryEmail(params: {
+  name?: string;
+  email: string;
+  year?: number;
+}): Promise<void> {
+  const { name, email, year } = params;
+  const y = year ?? new Date().getFullYear();
+  const anniversaryNumber = y - FOUNDED_YEAR_EMAIL;
+
+  const html = buildAnniversaryEmailHtml({ name, year: y });
+
+  try {
+    const resend = getResend();
+    await resend.emails.send({
+      from: FROM_ADDRESS,
+      to: email,
+      subject: `🎉 ${anniversaryNumber} años de APTO — Te invitamos a la nueva plataforma`,
+      html,
+    });
+  } catch (error) {
+    console.error("Failed to send anniversary email:", error);
   }
 }
 

@@ -1,9 +1,12 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Briefcase, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { prisma } from "@/lib/prisma";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
+import { getActiveMembership } from "@/lib/require-active-membership";
+import { MembershipRequired } from "../_components/membership-required";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +37,21 @@ export default async function BolsaTrabajoMiembrosPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+  const membership = await getActiveMembership();
+  if (!membership) redirect("/auth/login");
+  if (!membership.isActive) {
+    return (
+      <MembershipRequired
+        sectionTitle="Bolsa de Trabajo"
+        sectionDescription="Oportunidades laborales para terapeutas ocupacionales"
+        memberId={membership.userId}
+        memberEmail={membership.email}
+        memberType={membership.memberType}
+        status={membership.status}
+      />
+    );
+  }
+
   const search = await searchParams;
   const tipo = typeof search.tipo === "string" ? search.tipo : undefined;
   const pagina =
