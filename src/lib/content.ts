@@ -1,3 +1,5 @@
+import sanitizeHtml from "sanitize-html";
+
 /**
  * Converts plain-text post/event content to safe HTML.
  *
@@ -12,7 +14,9 @@ export function renderTextContent(text: string): string {
 
   // If it already has HTML structure, render as-is (future rich-text editor content)
   if (/<(p|ul|ol|li|h[1-6]|br|strong|em|div)\b/i.test(text)) {
-    return text;
+    return sanitizeHtml(text, {
+      allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img"]),
+    });
   }
 
   // Escape HTML to prevent XSS
@@ -88,5 +92,7 @@ export function renderTextContent(text: string): string {
     html.push(`<p>${paragraph.join("<br>")}</p>`);
   }
 
-  return html.join("\n");
+  return sanitizeHtml(html.join("\n"), {
+    allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img"]),
+  });
 }

@@ -1,0 +1,4 @@
+## 2024-05-12 - [Critical XSS in renderTextContent Fast Path]
+**Vulnerability:** A critical Cross-Site Scripting (XSS) vulnerability existed in `src/lib/content.ts` within the `renderTextContent` function.
+**Learning:** The function implemented a "fast path" (`if (/<(p|ul|ol|li|h[1-6]|br|strong|em|div)\b/i.test(text)) return text;`) to bypass escaping for strings containing HTML structure. This allowed attackers to easily construct payloads like `<p><script>alert('xss')</script></p>`, bypassing all manual XSS defenses.
+**Prevention:** Always use established sanitization libraries like `sanitize-html` or `dompurify` for parsing rich text, rather than writing custom regex-based sanitizers. Ensure all input paths, including "fast paths", are properly sanitized before rendering with `dangerouslySetInnerHTML`.
