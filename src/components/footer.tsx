@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Facebook, Youtube, Mail, Phone, MapPin } from "lucide-react";
+import { Facebook, Youtube, Mail, Phone, MapPin, Briefcase } from "lucide-react";
 import {
   CONTACT_EMAIL,
   CONTACT_PHONE,
@@ -49,6 +49,13 @@ export function Footer() {
             <p className="text-sm text-white/60">
               Impulsando la Terapia Ocupacional en México desde 1993.
             </p>
+            <Link
+              href="/bolsa-trabajo"
+              className="inline-flex items-center gap-2 rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-700"
+            >
+              <Briefcase className="h-4 w-4" />
+              Bolsa de Trabajo
+            </Link>
             <div className="flex gap-3">
               <a
                 href={SOCIAL_FACEBOOK}

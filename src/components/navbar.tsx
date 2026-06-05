@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, X, Sparkles } from "lucide-react";
+import { Menu, X, Sparkles, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
@@ -61,6 +61,10 @@ export function Navbar({ specialEvent }: NavbarProps) {
               {specialEvent.label}
             </Link>
           )}
+          <Button variant="outline" size="sm" render={<Link href="/bolsa-trabajo" />}>
+            <Briefcase className="mr-1.5 h-4 w-4" />
+            Bolsa de Trabajo
+          </Button>
           <Button variant="ghost" size="sm" render={<Link href="/auth/login" />}>
             Iniciar Sesión
           </Button>
@@ -109,6 +113,13 @@ export function Navbar({ specialEvent }: NavbarProps) {
                 )}
               </nav>
               <div className="flex flex-col gap-2 border-t pt-4">
+                <Button
+                  variant="outline"
+                  render={<Link href="/bolsa-trabajo" onClick={() => setOpen(false)} />}
+                >
+                  <Briefcase className="mr-1.5 h-4 w-4" />
+                  Bolsa de Trabajo
+                </Button>
                 <Button
                   variant="outline"
                   render={<Link href="/auth/login" onClick={() => setOpen(false)} />}
