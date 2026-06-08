@@ -1,0 +1,70 @@
+# Trigger Dokploy redeploy after build.yml pushes image to GHCR.
+#
+# Required GitHub vars:
+#   DOKPLOY_URL         https://panel.prosuite.pro
+#   DOKPLOY_COMPOSE_ID  (from Dokploy UI URL)
+# Required GitHub secret:
+#   DOKPLOY_TOKEN       Dokploy API token (Owner scope)
+
+name: Deploy to Dokploy
+
+on:
+  workflow_run:
+    workflows: ["Build and push image"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Trigger Dokploy compose redeploy
+        env:
+          DOKPLOY_URL: ${{ vars.DOKPLOY_URL }}
+          DOKPLOY_TOKEN: ${{ secrets.DOKPLOY_TOKEN }}
+          COMPOSE_ID: ${{ vars.DOKPLOY_COMPOSE_ID }}
+        run: |
+          set -e
+          if [ -z "$DOKPLOY_URL" ] || [ -z "$DOKPLOY_TOKEN" ] || [ -z "$COMPOSE_ID" ]; then
+            echo "::error::Missing DOKPLOY_URL / DOKPLOY_TOKEN / DOKPLOY_COMPOSE_ID"
+            exit 1
+          fi
+          echo "Calling compose.deploy on $DOKPLOY_URL for compose $COMPOSE_ID"
+          response=$(curl -sw "\n%{http_code}" -X POST \
+            -H "x-api-key: $DOKPLOY_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"json\":{\"composeId\":\"$COMPOSE_ID\"}}" \
+            "$DOKPLOY_URL/api/trpc/compose.deploy")
+          body=$(echo "$response" | head -n -1)
+          code=$(echo "$response" | tail -n 1)
+          echo "HTTP $code"
+          echo "$body"
+          if [ "$code" != "200" ]; then
+            echo "::error::Dokploy deploy trigger failed (HTTP $code)"
+            exit 1
+          fi
+          echo "::notice::Deploy triggered. Watch Dokploy UI for rollout status."
+
+      - name: Poll status (best-effort, up to 5 min)
+        env:
+          DOKPLOY_URL: ${{ vars.DOKPLOY_URL }}
+          DOKPLOY_TOKEN: ${{ secrets.DOKPLOY_TOKEN }}
+          COMPOSE_ID: ${{ vars.DOKPLOY_COMPOSE_ID }}
+        run: |
+          for i in $(seq 1 30); do
+            status=$(curl -sf -H "x-api-key: $DOKPLOY_TOKEN" \
+              "$DOKPLOY_URL/api/trpc/compose.one?input=%7B%22json%22%3A%7B%22composeId%22%3A%22$COMPOSE_ID%22%7D%7D" \
+              2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('result',{}).get('data',{}).get('json',{}).get('composeStatus','?'))" 2>/dev/null || echo "?")
+            echo "Attempt $i: status=$status"
+            case "$status" in
+              done|running)   echo "::notice::Deploy completed successfully"; exit 0 ;;
+              error)          echo "::error::Deploy reported error"; exit 1 ;;
+            esac
+            sleep 10
+          done
+          echo "::warning::Status polling timeout (5min). Check Dokploy UI."
