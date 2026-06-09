@@ -1,6 +1,10 @@
+version: '3.9'
+
 services:
+  # ── PostgreSQL Database ──────────────────────────────────────────────────────
   db:
     image: postgres:16-alpine
+    container_name: apto-postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: apto
@@ -15,11 +19,32 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+    labels:
+      org.prosuite.git-sha: "${COMMIT_SHA:-latest}"
+      org.prosuite.client: "apto"
+      org.prosuite.role: "postgres"
+      org.prosuite.author: "felix"
 
+  # ── APTO Web App (Next.js) ───────────────────────────────────────────────────
   app:
-    build:
-      context: .
-      dockerfile: dockerfile
+    image: ghcr.io/felixtron/apto:${COMMIT_SHA:-latest}
+    container_name: apto-app
     restart: unless-stopped
     depends_on:
       db:
@@ -61,22 +86,52 @@ services:
       R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
     networks:
       - internal
-      - dokploy-network
+      - traefik
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/', (r) => r.statusCode === 200 ? process.exit(0) : process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.apto.rule=Host(`${APP_DOMAIN:-apto.org.mx}`)"
       - "traefik.http.routers.apto.entrypoints=websecure"
+      - "traefik.http.routers.apto.tls=true"
       - "traefik.http.routers.apto.tls.certresolver=letsencrypt"
       - "traefik.http.services.apto.loadbalancer.server.port=3000"
       - "traefik.http.routers.apto-http.rule=Host(`${APP_DOMAIN:-apto.org.mx}`)"
       - "traefik.http.routers.apto-http.entrypoints=web"
       - "traefik.http.routers.apto-http.middlewares=redirect-to-https"
       - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "org.prosuite.git-sha=${COMMIT_SHA:-latest}"
+      - "org.prosuite.client=apto"
+      - "org.prosuite.role=app"
+      - "org.prosuite.author=felix"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+    read_only: false  # Next.js standalone server may require writing temp caches unless custom tmpfs is fully wired
+    tmpfs:
+      - /tmp
 
 volumes:
   postgres_data:
+    driver: local
 
 networks:
   internal:
-  dokploy-network:
+  traefik:
     external: true
