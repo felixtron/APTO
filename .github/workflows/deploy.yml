@@ -36,7 +36,11 @@ jobs:
           mkdir -p ~/.ssh
           echo "$SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          
+
+          # deploy.sh calls ssh/scp without -i, so load the key into the agent
+          eval "$(ssh-agent -s)"
+          ssh-add ~/.ssh/deploy_key
+
           ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
           
           export SSH_HOST="$SSH_HOST"
