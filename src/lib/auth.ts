@@ -4,6 +4,10 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  // Behind a reverse proxy (Traefik/Cloudflare) Auth.js v5 rejects the
+  // forwarded Host unless we explicitly trust it, otherwise non-admin login
+  // fails with "UntrustedHost" → /api/auth/error?error=Configuration.
+  trustHost: true,
   providers: [
     Credentials({
       credentials: {

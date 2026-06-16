@@ -55,6 +55,8 @@ services:
       NEXT_PUBLIC_APP_URL: https://${APP_DOMAIN:-apto.org.mx}
       NEXTAUTH_URL: https://${APP_DOMAIN:-apto.org.mx}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      # Auth.js v5 trusts the proxied Host only when this is set (member login)
+      AUTH_TRUST_HOST: ${AUTH_TRUST_HOST:-true}
       CERTIFICATE_SECRET: ${CERTIFICATE_SECRET:-}
       CRON_SECRET: ${CRON_SECRET:-}
 
