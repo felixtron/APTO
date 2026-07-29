@@ -171,6 +171,68 @@ async function handleEventRegistration(
   }
 }
 
+/**
+ * La API 2025-04-30.basil movió `invoice.subscription` a
+ * `invoice.parent.subscription_details.subscription`. Leemos ambas formas para
+ * no depender de la versión con la que Stripe entregue el evento.
+ */
+function getInvoiceSubscriptionId(
+  invoice: Record<string, unknown>
+): string | undefined {
+  return (
+    readId(invoice.subscription) ??
+    readId(
+      (
+        (invoice.parent as Record<string, unknown> | null | undefined)
+          ?.subscription_details as Record<string, unknown> | null | undefined
+      )?.subscription
+    )
+  );
+}
+
+/** Misma historia: `current_period_end` pasó del subscription a cada item. */
+function getSubscriptionPeriodEnd(
+  subscription: Record<string, unknown>
+): number | undefined {
+  const legacy = subscription.current_period_end;
+  if (typeof legacy === "number") return legacy;
+
+  const items = subscription.items as
+    | { data?: Array<Record<string, unknown>> }
+    | undefined;
+  const fromItem = items?.data?.[0]?.current_period_end;
+  return typeof fromItem === "number" ? fromItem : undefined;
+}
+
+function readId(value: unknown): string | undefined {
+  if (typeof value === "string") return value;
+  if (value && typeof value === "object") {
+    const id = (value as Record<string, unknown>).id;
+    if (typeof id === "string") return id;
+  }
+  return undefined;
+}
+
+/** Busca al miembro por suscripción y, si no aparece, por customer de Stripe. */
+async function findMemberForInvoice(invoice: Record<string, unknown>) {
+  const subscriptionId = getInvoiceSubscriptionId(invoice);
+  if (subscriptionId) {
+    const bySubscription = await prisma.member.findFirst({
+      where: { subscriptionId },
+    });
+    if (bySubscription) return bySubscription;
+  }
+
+  const customerId = readId(invoice.customer);
+  if (customerId) {
+    return prisma.member.findFirst({
+      where: { stripeCustomerId: customerId },
+    });
+  }
+
+  return null;
+}
+
 async function handleSubscriptionUpdate(
   subscription: Record<string, unknown>
 ) {
@@ -180,7 +242,7 @@ async function handleSubscriptionUpdate(
   });
   if (!member) return;
 
-  const periodEnd = (subscription.current_period_end as number) || null;
+  const periodEnd = getSubscriptionPeriodEnd(subscription);
 
   await prisma.member.update({
     where: { id: member.id },
@@ -212,25 +274,14 @@ async function handleSubscriptionDeleted(
 }
 
 async function handleInvoiceFailed(invoice: Record<string, unknown>) {
-  const subscription = invoice.subscription;
-  const subscriptionId =
-    typeof subscription === "string"
-      ? subscription
-      : (subscription as Record<string, unknown> | null)?.id as string | undefined;
+  const member = await findMemberForInvoice(invoice);
 
-  let memberName: string | undefined;
-  let memberEmail: string | undefined;
-
-  if (subscriptionId) {
-    const member = await prisma.member.findFirst({
-      where: { subscriptionId },
-      select: { name: true, email: true },
-    });
-    if (member) {
-      memberName = member.name;
-      memberEmail = member.email;
-    }
-  }
+  // Si el miembro no está en la BD, al menos identificamos el cobro con los
+  // datos que trae la propia factura de Stripe.
+  const memberName =
+    member?.name ?? (invoice.customer_name as string | null) ?? undefined;
+  const memberEmail =
+    member?.email ?? (invoice.customer_email as string | null) ?? undefined;
 
   sendPaymentFailedAlert({
     invoiceId: (invoice.id as string | undefined) ?? "unknown",
@@ -243,16 +294,7 @@ async function handleInvoiceFailed(invoice: Record<string, unknown>) {
 async function handleInvoicePaid(
   invoice: Record<string, unknown>
 ) {
-  const subscription = invoice.subscription;
-  const subscriptionId =
-    typeof subscription === "string"
-      ? subscription
-      : (subscription as Record<string, unknown> | null)?.id as string | undefined;
-  if (!subscriptionId) return;
-
-  const member = await prisma.member.findFirst({
-    where: { subscriptionId },
-  });
+  const member = await findMemberForInvoice(invoice);
   if (!member) return;
 
   const lines = invoice.lines as { data?: Array<{ period?: { end?: number } }> } | undefined;
