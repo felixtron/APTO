@@ -3,7 +3,22 @@ import { isAdminAuthenticated } from "@/lib/admin-auth";
 import { uploadFile } from "@/lib/storage";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+// Extension is derived from the validated MIME type, never from the file name.
+const EXTENSION_BY_TYPE: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/gif": "gif",
+};
+// Must stay within the public prefixes served by /api/files.
+const ALLOWED_FOLDERS = new Set([
+  "uploads",
+  "noticias",
+  "eventos",
+  "mesa-directiva",
+  "galeria",
+  "nosotros",
+]);
 
 export async function POST(request: NextRequest) {
   if (!(await isAdminAuthenticated())) {
@@ -11,14 +26,20 @@ export async function POST(request: NextRequest) {
   }
 
   const formData = await request.formData();
-  const file = formData.get("file") as File | null;
-  const folder = (formData.get("folder") as string) || "uploads";
+  const file = formData.get("file");
+  const folderField = formData.get("folder");
+  const folder = typeof folderField === "string" && folderField ? folderField : "uploads";
 
-  if (!file) {
+  if (!(file instanceof File)) {
     return NextResponse.json({ error: "No file provided" }, { status: 400 });
   }
 
-  if (!ALLOWED_TYPES.includes(file.type)) {
+  if (!ALLOWED_FOLDERS.has(folder)) {
+    return NextResponse.json({ error: "Carpeta no permitida" }, { status: 400 });
+  }
+
+  const ext = EXTENSION_BY_TYPE[file.type];
+  if (!ext) {
     return NextResponse.json(
       { error: "Tipo de archivo no permitido. Usa JPG, PNG, WebP o GIF." },
       { status: 400 }
@@ -33,7 +54,6 @@ export async function POST(request: NextRequest) {
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  const ext = file.name.split(".").pop() || "jpg";
   const timestamp = Date.now();
   const safeName = file.name
     .replace(/\.[^.]+$/, "")

@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Calendar, Lock, MapPin, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -95,11 +96,14 @@ export default async function EventoPage({
 
         <div className="mt-8">
           {event.coverImage && (
-            <div className="mb-8 aspect-video overflow-hidden rounded-xl">
-              <img
+            <div className="relative mb-8 aspect-video overflow-hidden rounded-xl">
+              <Image
                 src={event.coverImage}
                 alt={event.title}
-                className="h-full w-full object-cover"
+                fill
+                priority
+                sizes="(min-width: 896px) 896px, 100vw"
+                className="object-cover"
               />
             </div>
           )}

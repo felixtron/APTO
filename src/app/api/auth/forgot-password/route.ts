@@ -1,29 +1,39 @@
 import { NextResponse } from "next/server";
-import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 import { getResend } from "@/lib/resend";
+import {
+  buildResetUrl,
+  createPasswordResetToken,
+  SELF_SERVICE_RESET_TTL_MS,
+} from "@/lib/password-reset";
+import { checkRateLimit, getClientIp, tooManyRequests } from "@/lib/rate-limit";
+
+const GENERIC_MESSAGE =
+  "Si tu email está registrado, recibirás instrucciones para restablecer tu contraseña.";
 
 export async function POST(request: Request) {
   try {
     const { email } = await request.json();
 
     if (!email || typeof email !== "string") {
-      return NextResponse.json(
-        { message: "Si tu email está registrado, recibirás instrucciones para restablecer tu contraseña." },
-        { status: 200 }
-      );
+      return NextResponse.json({ message: GENERIC_MESSAGE }, { status: 200 });
     }
 
-    const member = await prisma.member.findUnique({ where: { email: email.toLowerCase().trim() } });
+    const normalizedEmail = email.toLowerCase().trim();
+    const limit = checkRateLimit("passwordReset", [
+      getClientIp(request.headers),
+      normalizedEmail,
+    ]);
+    if (!limit.allowed) return tooManyRequests(limit.retryAfterSeconds);
+
+    const member = await prisma.member.findUnique({
+      where: { email: normalizedEmail },
+      select: { email: true, passwordHash: true },
+    });
 
     if (member) {
-      const secret = process.env.NEXTAUTH_SECRET!;
-      const payload = JSON.stringify({ email: member.email, exp: Date.now() + 3600000 }); // 1 hour
-      const signature = crypto.createHmac("sha256", secret).update(payload).digest("hex");
-      const token = Buffer.from(payload).toString("base64url") + "." + signature;
-
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://apto.org.mx";
-      const resetUrl = `${baseUrl}/auth/reset-password?token=${token}`;
+      const token = createPasswordResetToken(member, SELF_SERVICE_RESET_TTL_MS);
+      const resetUrl = buildResetUrl(token);
       const from = process.env.RESEND_FROM || "APTO <noreply@apto.org.mx>";
 
       const resend = getResend();
@@ -44,20 +54,14 @@ export async function POST(request: Request) {
       if (error) {
         console.error("Resend error (forgot-password):", error);
       } else {
-        console.log("Password reset email sent:", data?.id, "to:", member.email);
+        console.info("Password reset email sent:", data?.id);
       }
     }
 
     // Always return success to avoid revealing if email exists
-    return NextResponse.json(
-      { message: "Si tu email está registrado, recibirás instrucciones para restablecer tu contraseña." },
-      { status: 200 }
-    );
+    return NextResponse.json({ message: GENERIC_MESSAGE }, { status: 200 });
   } catch (error) {
     console.error("Forgot password error:", error);
-    return NextResponse.json(
-      { message: "Si tu email está registrado, recibirás instrucciones para restablecer tu contraseña." },
-      { status: 200 }
-    );
+    return NextResponse.json({ message: GENERIC_MESSAGE }, { status: 200 });
   }
 }

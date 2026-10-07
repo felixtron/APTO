@@ -3,6 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
 import { auth } from "@/lib/auth";
 import { createTrainingCertificate } from "@/lib/generate-certificate";
+import { z } from "zod";
+import { emailSchema, optionalText, parseJsonBody } from "@/lib/validation";
+import { checkRateLimit, getClientIp, tooManyRequests } from "@/lib/rate-limit";
 
 const tierLabels: Record<string, string> = {
   student: "Estudiante",
@@ -26,23 +29,26 @@ function getEventPrice(
   }
 }
 
+const registrationSchema = z.object({
+  eventId: z.string({ error: "Datos incompletos" }).min(1, "Datos incompletos").max(64),
+  name: z.string({ error: "Datos incompletos" }).trim().min(1, "Datos incompletos").max(120),
+  email: emailSchema,
+  phone: optionalText(30),
+  registrationType: z
+    .enum(["student", "teacher", "professional"], { error: "Tipo de registro inválido" })
+    .default("professional"),
+  memberId: z.string().max(64).nullish(),
+});
+
 export async function POST(request: NextRequest) {
   try {
-    const { eventId, name, email, phone, registrationType = "professional", memberId: bodyMemberId } = await request.json();
+    const limit = checkRateLimit("eventRegister", [getClientIp(request.headers)]);
+    if (!limit.allowed) return tooManyRequests(limit.retryAfterSeconds);
 
-    if (!eventId || !name || !email) {
-      return NextResponse.json(
-        { error: "Datos incompletos" },
-        { status: 400 }
-      );
-    }
-
-    if (!["student", "teacher", "professional"].includes(registrationType)) {
-      return NextResponse.json(
-        { error: "Tipo de registro inválido" },
-        { status: 400 }
-      );
-    }
+    const parsed = await parseJsonBody(request, registrationSchema);
+    if (!parsed.ok) return parsed.response;
+    const { eventId, name, email, phone, registrationType, memberId: bodyMemberId } =
+      parsed.data;
 
     // Fetch event
     const event = await prisma.event.findUnique({
@@ -105,7 +111,8 @@ export async function POST(request: NextRequest) {
     const existingReg = await prisma.eventRegistration.findFirst({
       where: {
         eventId,
-        email,
+        // Older rows may have mixed-case emails
+        email: { equals: email, mode: "insensitive" },
         status: { in: ["PENDING", "CONFIRMED"] },
       },
     });
@@ -147,6 +154,7 @@ export async function POST(request: NextRequest) {
 
     // Paid event — create Stripe checkout session
     const tierLabel = tierLabels[registrationType] || "Profesional";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://apto.org.mx";
     const stripe = await getStripe();
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -166,8 +174,8 @@ export async function POST(request: NextRequest) {
           quantity: 1,
         },
       ],
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/eventos/${event.slug}?registro=exitoso`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/eventos/${event.slug}?registro=cancelado`,
+      success_url: `${baseUrl}/eventos/${event.slug}?registro=exitoso`,
+      cancel_url: `${baseUrl}/eventos/${event.slug}?registro=cancelado`,
     });
 
     // Save stripe session ID on registration

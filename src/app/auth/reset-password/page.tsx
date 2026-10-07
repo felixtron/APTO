@@ -24,8 +24,8 @@ function ResetPasswordForm() {
     e.preventDefault();
     setError("");
 
-    if (password.length < 6) {
-      setError("La contraseña debe tener al menos 6 caracteres.");
+    if (password.length < 8) {
+      setError("La contraseña debe tener al menos 8 caracteres.");
       return;
     }
 
@@ -93,10 +93,10 @@ function ResetPasswordForm() {
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Mínimo 6 caracteres"
+          placeholder="Mínimo 8 caracteres"
           className="mt-1"
           required
-          minLength={6}
+          minLength={8}
         />
       </div>
       <div>
@@ -109,7 +109,7 @@ function ResetPasswordForm() {
           placeholder="Repite tu contraseña"
           className="mt-1"
           required
-          minLength={6}
+          minLength={8}
         />
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}

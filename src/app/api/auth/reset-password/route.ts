@@ -1,10 +1,21 @@
 import { NextResponse } from "next/server";
-import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { isResetTokenCurrent, verifyPasswordResetToken } from "@/lib/password-reset";
+import { checkRateLimit, getClientIp, tooManyRequests } from "@/lib/rate-limit";
+
+const MIN_PASSWORD_LENGTH = 8;
+const BCRYPT_COST = 12;
+
+function invalidToken() {
+  return NextResponse.json({ error: "Token inválido." }, { status: 400 });
+}
 
 export async function POST(request: Request) {
   try {
+    const limit = checkRateLimit("passwordResetConfirm", [getClientIp(request.headers)]);
+    if (!limit.allowed) return tooManyRequests(limit.retryAfterSeconds);
+
     const { token, password } = await request.json();
 
     if (!token || !password || typeof token !== "string" || typeof password !== "string") {
@@ -14,59 +25,41 @@ export async function POST(request: Request) {
       );
     }
 
-    if (password.length < 6) {
+    if (password.length < MIN_PASSWORD_LENGTH) {
       return NextResponse.json(
-        { error: "La contraseña debe tener al menos 6 caracteres." },
+        { error: `La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.` },
         { status: 400 }
       );
     }
 
-    // Decode and verify token
-    const parts = token.split(".");
-    if (parts.length !== 2) {
+    const verified = verifyPasswordResetToken(token);
+    if (!verified.ok) {
+      return verified.reason === "expired"
+        ? NextResponse.json(
+            { error: "El enlace ha expirado. Solicita uno nuevo." },
+            { status: 400 }
+          )
+        : invalidToken();
+    }
+
+    const member = await prisma.member.findUnique({
+      where: { email: verified.email },
+      select: { id: true, passwordHash: true },
+    });
+
+    // Token is bound to the password hash it was issued for: once used
+    // (or if the password changed since), it no longer matches.
+    if (!member || !isResetTokenCurrent(verified, member.passwordHash)) {
       return NextResponse.json(
-        { error: "Token inválido." },
+        { error: "Este enlace ya fue usado o no es válido. Solicita uno nuevo." },
         { status: 400 }
       );
     }
 
-    const [payloadB64, signature] = parts;
-    const secret = process.env.NEXTAUTH_SECRET!;
+    const passwordHash = await bcrypt.hash(password, BCRYPT_COST);
 
-    let payload: string;
-    try {
-      payload = Buffer.from(payloadB64, "base64url").toString();
-    } catch {
-      return NextResponse.json(
-        { error: "Token inválido." },
-        { status: 400 }
-      );
-    }
-
-    const expectedSig = crypto.createHmac("sha256", secret).update(payload).digest("hex");
-
-    if (signature !== expectedSig) {
-      return NextResponse.json(
-        { error: "Token inválido." },
-        { status: 400 }
-      );
-    }
-
-    const { email, exp } = JSON.parse(payload);
-
-    if (Date.now() > exp) {
-      return NextResponse.json(
-        { error: "El enlace ha expirado. Solicita uno nuevo." },
-        { status: 400 }
-      );
-    }
-
-    // Hash new password
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    // Update member
     await prisma.member.update({
-      where: { email },
+      where: { id: member.id },
       data: { passwordHash },
     });
 

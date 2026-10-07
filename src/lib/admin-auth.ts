@@ -1,21 +1,10 @@
 import { cookies } from "next/headers";
-import crypto from "crypto";
+import { createSignedToken, verifySignedToken } from "@/lib/signed-token";
 
-function getSecret(): string {
-  return process.env.NEXTAUTH_SECRET || process.env.ADMIN_PASSWORD || "fallback";
-}
+const ADMIN_SESSION_TTL_MS = 24 * 60 * 60 * 1000;
 
 export function generateAdminToken(): string {
-  const payload = JSON.stringify({
-    role: "admin",
-    iat: Date.now(),
-    exp: Date.now() + 86400000, // 24h
-  });
-  const signature = crypto
-    .createHmac("sha256", getSecret())
-    .update(payload)
-    .digest("hex");
-  return Buffer.from(payload).toString("base64url") + "." + signature;
+  return createSignedToken("admin-session", { role: "admin" }, ADMIN_SESSION_TTL_MS);
 }
 
 export async function isAdminAuthenticated(): Promise<boolean> {
@@ -25,25 +14,11 @@ export async function isAdminAuthenticated(): Promise<boolean> {
   if (!token) return false;
 
   try {
-    const [payloadB64, sig] = token.split(".");
-    if (!payloadB64 || !sig) return false;
-
-    const payload = Buffer.from(payloadB64, "base64url").toString();
-    const expectedSig = crypto
-      .createHmac("sha256", getSecret())
-      .update(payload)
-      .digest("hex");
-
-    if (
-      sig.length !== expectedSig.length ||
-      !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSig))
-    ) {
-      return false;
-    }
-
-    const { exp } = JSON.parse(payload);
-    return Date.now() < exp;
-  } catch {
+    const result = verifySignedToken("admin-session", token);
+    return result.ok && result.claims.role === "admin";
+  } catch (error) {
+    // Missing signing secret: fail closed.
+    console.error("Admin token verification failed:", error);
     return false;
   }
 }

@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -43,11 +44,14 @@ export default async function NoticiaPage({
 
         <div className="mt-8">
           {post.coverImage && (
-            <div className="mb-8 aspect-video overflow-hidden rounded-xl">
-              <img
+            <div className="relative mb-8 aspect-video overflow-hidden rounded-xl">
+              <Image
                 src={post.coverImage}
                 alt={post.title}
-                className="h-full w-full object-cover"
+                fill
+                priority
+                sizes="(min-width: 768px) 768px, 100vw"
+                className="object-cover"
               />
             </div>
           )}

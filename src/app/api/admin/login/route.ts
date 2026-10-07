@@ -1,19 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import crypto from "crypto";
 import { generateAdminToken } from "@/lib/admin-auth";
+import { safeEqual } from "@/lib/secure-compare";
+import {
+  checkRateLimit,
+  getClientIp,
+  peekRateLimit,
+  recordRateLimitHit,
+  tooManyRequests,
+} from "@/lib/rate-limit";
+
+const GLOBAL_KEY = "all";
 
 export async function POST(request: NextRequest) {
+  // Per-IP limit plus a global cap on *failed* attempts, so rotating IPs
+  // cannot brute-force the single shared admin password.
+  const ipLimit = checkRateLimit("adminLogin", [getClientIp(request.headers)]);
+  if (!ipLimit.allowed) return tooManyRequests(ipLimit.retryAfterSeconds);
+  const globalLimit = peekRateLimit("adminLoginGlobal", GLOBAL_KEY);
+  if (!globalLimit.allowed) return tooManyRequests(globalLimit.retryAfterSeconds);
+
   const { password } = await request.json();
 
-  const expected = process.env.ADMIN_PASSWORD || "";
-  const passwordBuf = Buffer.from(password || "");
-  const expectedBuf = Buffer.from(expected);
-
-  if (
-    passwordBuf.length !== expectedBuf.length ||
-    !crypto.timingSafeEqual(passwordBuf, expectedBuf)
-  ) {
+  const expected = process.env.ADMIN_PASSWORD;
+  if (!expected || typeof password !== "string" || !safeEqual(password, expected)) {
+    recordRateLimitHit("adminLoginGlobal", GLOBAL_KEY);
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

@@ -1,4 +1,4 @@
-name: Deploy APTO to Production (VPS-2)
+name: Deploy APTO to Production (propodvps2)
 
 on:
   workflow_run:
@@ -9,48 +9,54 @@ on:
 
 permissions:
   contents: read
+  packages: read # lets the host pull the private image with this job's token
+
+# Never run two deploys against the same Quadlet at once
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    env:
+      # Deploy exactly the commit that was built, not whatever main is now
+      DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
+          ref: ${{ env.DEPLOY_SHA }}
           fetch-depth: 1
 
-      - name: Deploy to panel-prosuite-2 (Worker)
+      - name: Deploy to propodvps2 (Podman Quadlet)
         env:
           SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           SSH_HOST: ${{ secrets.DEPLOY_SSH_HOST || '195.26.255.71' }}
           SSH_PORT: ${{ secrets.DEPLOY_SSH_PORT || '2226' }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER || 'root' }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
           if [ -z "$SSH_KEY" ]; then
             echo "::error::Missing DEPLOY_SSH_KEY secret"
             exit 1
           fi
-          
+
           mkdir -p ~/.ssh
           echo "$SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
 
-          # deploy.sh calls ssh/scp without -i, so load the key into the agent
+          # deploy.sh calls ssh without -i, so load the key into the agent
           eval "$(ssh-agent -s)"
           ssh-add ~/.ssh/deploy_key
 
           ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
-          
-          export SSH_HOST="$SSH_HOST"
-          export SSH_PORT="$SSH_PORT"
-          export DEPLOY_USER="$DEPLOY_USER"
-          
-          # Execute deploy.sh using the latest push SHA
-          log_sha=$(git rev-parse --short HEAD)
-          echo "Triggering deploy script for commit $log_sha"
-          
-          # Set executable and run deploy script
-          chmod +x ./deploy.sh
-          bash ./deploy.sh production "$log_sha"
+
+          # Image tags are sha-<7 chars> (docker/metadata-action, format=short)
+          short_sha="${DEPLOY_SHA::7}"
+          echo "Deploying commit $short_sha"
+
+          bash ./deploy.sh production "$short_sha"

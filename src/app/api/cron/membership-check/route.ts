@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { isAuthorizedCronRequest } from "@/lib/cron-auth";
 
 export async function GET(request: NextRequest) {
   try {
-    const token =
-      request.headers.get("authorization")?.replace("Bearer ", "") ||
-      new URL(request.url).searchParams.get("token");
-
-    if (token !== process.env.CRON_SECRET) {
+    if (!isAuthorizedCronRequest(request)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

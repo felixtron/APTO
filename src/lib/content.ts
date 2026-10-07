@@ -1,3 +1,25 @@
+import sanitizeHtml from "sanitize-html";
+import { escapeHtml } from "@/lib/html";
+
+const SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
+  allowedTags: [...sanitizeHtml.defaults.allowedTags, "img", "iframe"],
+  allowedAttributes: {
+    ...sanitizeHtml.defaults.allowedAttributes,
+    "*": ["class"],
+    a: ["href", "name", "target", "rel"],
+    iframe: ["src", "width", "height", "title", "allow", "allowfullscreen", "frameborder"],
+  },
+  // Video embeds only from trusted providers
+  allowedIframeHostnames: ["www.youtube.com", "www.youtube-nocookie.com", "player.vimeo.com"],
+  allowedSchemes: ["http", "https", "mailto", "tel"],
+  transformTags: {
+    a: sanitizeHtml.simpleTransform("a", {
+      target: "_blank",
+      rel: "noopener noreferrer",
+    }),
+  },
+};
+
 /**
  * Converts plain-text post/event content to safe HTML.
  *
@@ -5,22 +27,19 @@
  *   - Lines starting with "* " → <ul><li> bullets
  *   - Blank lines → paragraph breaks
  *   - URLs → clickable <a> links
- *   - If content already contains HTML tags, returns it as-is
+ *   - If content already contains HTML tags, it is sanitized (no scripts,
+ *     event handlers or javascript: URLs) and returned
  */
 export function renderTextContent(text: string): string {
   if (!text) return "";
 
-  // If it already has HTML structure, render as-is (future rich-text editor content)
+  // Rich-text content: keep the markup but strip anything executable.
   if (/<(p|ul|ol|li|h[1-6]|br|strong|em|div)\b/i.test(text)) {
-    return text;
+    return sanitizeHtml(text, SANITIZE_OPTIONS);
   }
 
   // Escape HTML to prevent XSS
-  const escaped = text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+  const escaped = escapeHtml(text);
 
   // Convert URLs to links (after escaping, URLs have &amp; for & params)
   const linked = escaped.replace(

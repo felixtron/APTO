@@ -4,6 +4,9 @@ import bcrypt from "bcryptjs";
 import { sendWelcomeEmail } from "@/lib/emails";
 import { getStripe } from "@/lib/stripe";
 import { createMembershipCertificate } from "@/lib/generate-certificate";
+import { z } from "zod";
+import { emailSchema, optionalText, parseJsonBody } from "@/lib/validation";
+import { checkRateLimit, getClientIp, tooManyRequests } from "@/lib/rate-limit";
 
 function generateMemberNumber(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -14,34 +17,37 @@ function generateMemberNumber(name: string): string {
   return `${digits}${initials}`;
 }
 
+const registerSchema = z.object({
+  name: z
+    .string({ error: "Nombre, email y contraseña son requeridos" })
+    .trim()
+    .min(1, "Nombre, email y contraseña son requeridos")
+    .max(120, "El nombre es demasiado largo"),
+  email: emailSchema,
+  password: z
+    .string({ error: "Nombre, email y contraseña son requeridos" })
+    .min(8, "La contraseña debe tener al menos 8 caracteres")
+    .max(200, "La contraseña es demasiado larga"),
+  phone: optionalText(30),
+  institution: optionalText(200),
+  sessionId: z.string().startsWith("cs_").max(255).nullish(),
+});
+
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, password, phone, institution, sessionId } =
-      await request.json();
+    const limit = checkRateLimit("register", [getClientIp(request.headers)]);
+    if (!limit.allowed) return tooManyRequests(limit.retryAfterSeconds);
 
-    if (!name || !email || !password) {
-      return NextResponse.json(
-        { error: "Nombre, email y contraseña son requeridos" },
-        { status: 400 }
-      );
-    }
-
-    if (password.length < 8) {
-      return NextResponse.json(
-        { error: "La contraseña debe tener al menos 8 caracteres" },
-        { status: 400 }
-      );
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return NextResponse.json(
-        { error: "Email inválido" },
-        { status: 400 }
-      );
-    }
-
-    const normalizedEmail = email.toLowerCase().trim();
+    const parsed = await parseJsonBody(request, registerSchema);
+    if (!parsed.ok) return parsed.response;
+    const {
+      name,
+      email: normalizedEmail,
+      password,
+      phone,
+      institution,
+      sessionId,
+    } = parsed.data;
 
     const existing = await prisma.member.findUnique({
       where: { email: normalizedEmail },
@@ -70,16 +76,19 @@ export async function POST(request: NextRequest) {
       const stripe = await getStripe();
       const session = await stripe.checkout.sessions.retrieve(sessionId);
 
-      if (session.payment_status !== "paid") {
+      if (session.status !== "complete" || session.payment_status !== "paid") {
         return NextResponse.json(
           { error: "El pago no se ha completado" },
           { status: 400 }
         );
       }
 
-      // Verify email matches the Stripe session
-      const sessionEmail = (session.customer_details?.email || session.customer_email || "").toLowerCase();
-      if (sessionEmail && sessionEmail !== normalizedEmail) {
+      // The paid session must belong to this email. Stripe always collects
+      // an email on checkout, so a missing one is treated as a mismatch.
+      const sessionEmail = (session.customer_details?.email || session.customer_email || "")
+        .toLowerCase()
+        .trim();
+      if (sessionEmail !== normalizedEmail) {
         return NextResponse.json(
           { error: "El email no coincide con la sesión de pago" },
           { status: 400 }
@@ -94,6 +103,25 @@ export async function POST(request: NextRequest) {
         typeof session.subscription === "string"
           ? session.subscription
           : session.subscription?.id ?? null;
+
+      // A paid session can only ever activate one account.
+      if (subscriptionId || customerId) {
+        const alreadyUsed = await prisma.member.findFirst({
+          where: {
+            OR: [
+              ...(subscriptionId ? [{ subscriptionId }] : []),
+              ...(customerId ? [{ stripeCustomerId: customerId }] : []),
+            ],
+          },
+          select: { id: true },
+        });
+        if (alreadyUsed) {
+          return NextResponse.json(
+            { error: "Esta sesión de pago ya fue utilizada" },
+            { status: 400 }
+          );
+        }
+      }
 
       const plan = session.metadata?.plan || "professional";
       const memberType = plan === "student" ? "STUDENT" : "PROFESSIONAL";

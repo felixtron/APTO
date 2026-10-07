@@ -1,19 +1,30 @@
 import Stripe from "stripe";
 import { cookies } from "next/headers";
+import { isAdminAuthenticated } from "@/lib/admin-auth";
 
 export type StripeMode = "test" | "live";
 
 const stripeInstances: Record<string, Stripe> = {};
 
 export async function getStripeMode(): Promise<StripeMode> {
+  const envMode: StripeMode = process.env.STRIPE_MODE === "live" ? "live" : "test";
   try {
     const cookieStore = await cookies();
     const modeCookie = cookieStore.get("stripe_mode")?.value;
-    if (modeCookie === "live" || modeCookie === "test") return modeCookie;
+    // The cookie is an admin-only testing aid. Honoring it for anonymous
+    // visitors would let anyone pay with a test card and activate a live
+    // membership, so it only applies to an authenticated admin session.
+    if (
+      (modeCookie === "live" || modeCookie === "test") &&
+      modeCookie !== envMode &&
+      (await isAdminAuthenticated())
+    ) {
+      return modeCookie;
+    }
   } catch {
     // cookies() not available (e.g. middleware or edge)
   }
-  return (process.env.STRIPE_MODE as StripeMode) || "test";
+  return envMode;
 }
 
 function getStripeKeys(mode: StripeMode) {

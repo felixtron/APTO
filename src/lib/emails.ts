@@ -1,4 +1,5 @@
 import { getResend } from "@/lib/resend";
+import { escapeHtml } from "@/lib/html";
 import {
   CONTACT_EMAIL,
   CONTACT_PHONE,
@@ -90,7 +91,7 @@ export async function sendWelcomeEmail(params: {
 }): Promise<void> {
   const { name, email, memberNumber } = params;
 
-  const firstName = name.split(" ")[0];
+  const firstName = escapeHtml(name.split(" ")[0]);
 
   const html = emailLayout(`
     <h2 style="margin:0 0 16px;color:#1f2937;font-size:20px;font-weight:600;">
@@ -164,18 +165,18 @@ export async function sendEventConfirmationEmail(params: {
     meetLink,
   } = params;
 
-  const firstName = name.split(" ")[0];
+  const firstName = escapeHtml(name.split(" ")[0]);
   const modalityLabel = MODALITY_LABELS[eventModality] || eventModality;
 
   // Build detail rows
   let detailsHtml = `
     <tr>
       <td style="padding:8px 12px;font-size:14px;color:#6b7280;border-bottom:1px solid #f3f4f6;width:120px;">Evento</td>
-      <td style="padding:8px 12px;font-size:14px;color:#1f2937;border-bottom:1px solid #f3f4f6;font-weight:600;">${eventTitle}</td>
+      <td style="padding:8px 12px;font-size:14px;color:#1f2937;border-bottom:1px solid #f3f4f6;font-weight:600;">${escapeHtml(eventTitle)}</td>
     </tr>
     <tr>
       <td style="padding:8px 12px;font-size:14px;color:#6b7280;border-bottom:1px solid #f3f4f6;">Fecha</td>
-      <td style="padding:8px 12px;font-size:14px;color:#1f2937;border-bottom:1px solid #f3f4f6;">${eventDate}</td>
+      <td style="padding:8px 12px;font-size:14px;color:#1f2937;border-bottom:1px solid #f3f4f6;">${escapeHtml(eventDate)}</td>
     </tr>
     <tr>
       <td style="padding:8px 12px;font-size:14px;color:#6b7280;border-bottom:1px solid #f3f4f6;">Modalidad</td>
@@ -189,7 +190,7 @@ export async function sendEventConfirmationEmail(params: {
     detailsHtml += `
     <tr>
       <td style="padding:8px 12px;font-size:14px;color:#6b7280;border-bottom:1px solid #f3f4f6;">Ubicaci&oacute;n</td>
-      <td style="padding:8px 12px;font-size:14px;color:#1f2937;border-bottom:1px solid #f3f4f6;">${eventLocation}</td>
+      <td style="padding:8px 12px;font-size:14px;color:#1f2937;border-bottom:1px solid #f3f4f6;">${escapeHtml(eventLocation)}</td>
     </tr>`;
   }
 
@@ -201,7 +202,7 @@ export async function sendEventConfirmationEmail(params: {
     <tr>
       <td style="padding:8px 12px;font-size:14px;color:#6b7280;border-bottom:1px solid #f3f4f6;">Enlace</td>
       <td style="padding:8px 12px;font-size:14px;color:#1f2937;border-bottom:1px solid #f3f4f6;">
-        <a href="${meetLink}" style="color:#2E6DA4;text-decoration:underline;">${meetLink}</a>
+        <a href="${escapeHtml(meetLink)}" style="color:#2E6DA4;text-decoration:underline;">${escapeHtml(meetLink)}</a>
       </td>
     </tr>`;
   }
@@ -254,7 +255,7 @@ export function buildAnniversaryEmailHtml(params?: {
   const year = params?.year ?? new Date().getFullYear();
   const anniversaryNumber = year - FOUNDED_YEAR_EMAIL;
   const greeting = params?.name
-    ? `Estimado/a ${params.name.split(" ")[0]}`
+    ? `Estimado/a ${escapeHtml(params.name.split(" ")[0])}`
     : "Estimado/a colega";
 
   return emailLayout(`
@@ -427,10 +428,10 @@ export async function sendPaymentFailedAlert(params: {
            style="margin:0 0 24px;border:1px solid #fecaca;border-radius:6px;overflow:hidden;background:#fff7f7;">
       <tr>
         <td style="padding:8px 12px;font-size:14px;color:#6b7280;border-bottom:1px solid #fee2e2;width:140px;">Invoice ID</td>
-        <td style="padding:8px 12px;font-size:14px;color:#1f2937;border-bottom:1px solid #fee2e2;font-family:monospace;">${invoiceId}</td>
+        <td style="padding:8px 12px;font-size:14px;color:#1f2937;border-bottom:1px solid #fee2e2;font-family:monospace;">${escapeHtml(invoiceId)}</td>
       </tr>
-      ${memberName ? `<tr><td style="padding:8px 12px;font-size:14px;color:#6b7280;border-bottom:1px solid #fee2e2;">Miembro</td><td style="padding:8px 12px;font-size:14px;color:#1f2937;border-bottom:1px solid #fee2e2;">${memberName}</td></tr>` : ""}
-      ${memberEmail ? `<tr><td style="padding:8px 12px;font-size:14px;color:#6b7280;border-bottom:1px solid #fee2e2;">Email</td><td style="padding:8px 12px;font-size:14px;color:#1f2937;border-bottom:1px solid #fee2e2;">${memberEmail}</td></tr>` : ""}
+      ${memberName ? `<tr><td style="padding:8px 12px;font-size:14px;color:#6b7280;border-bottom:1px solid #fee2e2;">Miembro</td><td style="padding:8px 12px;font-size:14px;color:#1f2937;border-bottom:1px solid #fee2e2;">${escapeHtml(memberName)}</td></tr>` : ""}
+      ${memberEmail ? `<tr><td style="padding:8px 12px;font-size:14px;color:#6b7280;border-bottom:1px solid #fee2e2;">Email</td><td style="padding:8px 12px;font-size:14px;color:#1f2937;border-bottom:1px solid #fee2e2;">${escapeHtml(memberEmail)}</td></tr>` : ""}
       <tr>
         <td style="padding:8px 12px;font-size:14px;color:#6b7280;border-bottom:1px solid #fee2e2;">Monto</td>
         <td style="padding:8px 12px;font-size:14px;color:#1f2937;border-bottom:1px solid #fee2e2;">${amountFormatted}</td>

@@ -1,34 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { getResend } from "@/lib/resend";
 import { CONTACT_EMAIL } from "@/lib/constants";
+import { escapeHtml } from "@/lib/html";
+import { emailSchema, optionalText, parseJsonBody } from "@/lib/validation";
+import { checkRateLimit, getClientIp, tooManyRequests } from "@/lib/rate-limit";
 
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
+const REQUIRED_MESSAGE = "Nombre, email y mensaje son requeridos";
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const contactSchema = z.object({
+  name: z.string({ error: REQUIRED_MESSAGE }).trim().min(1, REQUIRED_MESSAGE).max(120),
+  email: emailSchema,
+  subject: optionalText(200),
+  message: z
+    .string({ error: REQUIRED_MESSAGE })
+    .trim()
+    .min(1, REQUIRED_MESSAGE)
+    .max(5000, "El mensaje es demasiado largo"),
+});
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, subject, message } = await request.json();
+    const limit = checkRateLimit("contact", [getClientIp(request.headers)]);
+    if (!limit.allowed) return tooManyRequests(limit.retryAfterSeconds);
 
-    if (!name || !email || !message) {
-      return NextResponse.json(
-        { error: "Nombre, email y mensaje son requeridos" },
-        { status: 400 }
-      );
-    }
-
-    if (!EMAIL_REGEX.test(email)) {
-      return NextResponse.json(
-        { error: "Email inválido" },
-        { status: 400 }
-      );
-    }
+    const parsed = await parseJsonBody(request, contactSchema);
+    if (!parsed.ok) return parsed.response;
+    const { name, email, subject, message } = parsed.data;
 
     const safeName = escapeHtml(name);
     const safeEmail = escapeHtml(email);

@@ -85,6 +85,7 @@ export async function NewsPreview() {
                   alt={featured.title}
                   width={800}
                   height={450}
+                  sizes="(min-width: 1024px) 730px, 100vw"
                   className="h-full w-full object-cover"
                 />
               ) : (
