@@ -45,6 +45,8 @@ export default async function UniversidadesPage() {
                         alt={uni.shortName || uni.name}
                         width={48}
                         height={48}
+                        // External logos load directly: /_next/image only optimizes local paths
+                        unoptimized={/^https?:\/\//.test(uni.logoUrl)}
                         className="h-12 w-12 shrink-0 rounded-xl object-contain"
                       />
                     ) : (
