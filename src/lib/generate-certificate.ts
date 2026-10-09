@@ -1,10 +1,12 @@
-import { PDFDocument, rgb } from "pdf-lib";
+import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import QRCode from "qrcode";
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
 import { prisma } from "@/lib/prisma";
+import { fitSignature } from "@/lib/certificate-signature";
+import type { CertificateSignatory } from "@/lib/certificate-signatory";
 
 export interface CertificateData {
   memberName: string;
@@ -12,7 +14,7 @@ export interface CertificateData {
   certificateId: string; // Folio: "APTO-2025-0001"
   periodStart: Date;
   periodEnd: Date;
-  presidentName: string;
+  signatory: CertificateSignatory;
 }
 
 export interface TrainingCertificateData {
@@ -21,7 +23,7 @@ export interface TrainingCertificateData {
   certificateId: string;
   eventTitle: string;
   eventDate: Date;
-  presidentName: string;
+  signatory: CertificateSignatory;
 }
 
 export interface CertificateResult {
@@ -31,6 +33,11 @@ export interface CertificateResult {
 
 const DARK = rgb(0.1, 0.1, 0.1);
 const GRAY = rgb(0.35, 0.35, 0.35);
+
+// Espacio libre entre la línea de firma y el texto de arriba.
+const SIGNATURE_BOX = { maxWidth: 160, maxHeight: 46 };
+// La firma cruza un poco la línea, como una firma hecha a mano.
+const SIGNATURE_LINE_OVERLAP = 6;
 
 const MONTHS_ES = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -110,18 +117,8 @@ export async function generateCertificatePdf(
   const periodText = `Por el periodo: ${formatPeriod(data.periodStart, data.periodEnd)}`;
   drawCentered(page, periodText, pageHeight - 270, 13, interRegular, GRAY);
 
-  // ── Signature line ──
-  const signY = pageHeight - 330;
-  page.drawLine({
-    start: { x: centerX - 100, y: signY },
-    end: { x: centerX + 100, y: signY },
-    thickness: 0.8,
-    color: rgb(0.7, 0.7, 0.7),
-  });
-
-  // ── President name + label ──
-  drawCentered(page, data.presidentName, signY - 16, 11, interBold, DARK);
-  drawCentered(page, "Presidente", signY - 30, 10, interRegular, GRAY);
+  // ── Signature + signatory ──
+  await drawSignatureBlock(doc, page, data.signatory, interRegular, interBold);
 
   // ── QR Code (bottom-left) ──
   const margin = 20;
@@ -256,28 +253,16 @@ export async function generateTrainingCertificatePdf(
   // ── Member Name ──
   drawCentered(page, data.memberName, pageHeight - 200, 26, interBold, DARK);
 
-  // ── Event participation text ──
-  drawCentered(page, "Por su participación en:", pageHeight - 240, 13, interRegular, GRAY);
-
-  // ── Event title ──
-  const titleSize = data.eventTitle.length > 50 ? 14 : 16;
-  drawCentered(page, data.eventTitle, pageHeight - 260, titleSize, interBold, DARK);
+  // ── Event title — clear of the template's "Como Miembro Activo..." line ──
+  const titleSize = data.eventTitle.length > 50 ? 14 : 15;
+  drawCentered(page, data.eventTitle, pageHeight - 266, titleSize, interBold, DARK);
 
   // ── Event date ──
   const dateStr = `${data.eventDate.getDate()} de ${MONTHS_ES[data.eventDate.getMonth()]} de ${data.eventDate.getFullYear()}`;
-  drawCentered(page, dateStr, pageHeight - 280, 12, interRegular, GRAY);
+  drawCentered(page, dateStr, pageHeight - 283, 12, interRegular, GRAY);
 
-  // ── Signature line ──
-  const signY = pageHeight - 330;
-  page.drawLine({
-    start: { x: centerX - 100, y: signY },
-    end: { x: centerX + 100, y: signY },
-    thickness: 0.8,
-    color: rgb(0.7, 0.7, 0.7),
-  });
-
-  drawCentered(page, data.presidentName, signY - 16, 11, interBold, DARK);
-  drawCentered(page, "Presidente", signY - 30, 10, interRegular, GRAY);
+  // ── Signature + signatory ──
+  await drawSignatureBlock(doc, page, data.signatory, interRegular, interBold);
 
   // ── QR Code (bottom-left) ──
   const margin = 20;
@@ -377,9 +362,46 @@ export async function createTrainingCertificate(memberId: string, eventId: strin
   });
 }
 
+/** Autograph signature over the line, then the signatory's name and title. */
+async function drawSignatureBlock(
+  doc: PDFDocument,
+  page: PDFPage,
+  signatory: CertificateSignatory,
+  regular: PDFFont,
+  bold: PDFFont
+) {
+  const centerX = page.getWidth() / 2;
+  const signY = page.getHeight() - 330;
+
+  page.drawLine({
+    start: { x: centerX - 100, y: signY },
+    end: { x: centerX + 100, y: signY },
+    thickness: 0.8,
+    color: rgb(0.7, 0.7, 0.7),
+  });
+
+  // Drawn after the line so the ink sits on top of it
+  if (signatory.signature) {
+    const { bytes, format } = signatory.signature;
+    const image = format === "png" ? await doc.embedPng(bytes) : await doc.embedJpg(bytes);
+    const { width, height } = fitSignature(image.width, image.height, SIGNATURE_BOX);
+    page.drawImage(image, {
+      x: centerX - width / 2,
+      y: signY - SIGNATURE_LINE_OVERLAP,
+      width,
+      height,
+    });
+  }
+
+  drawCentered(page, signatory.name, signY - 16, 11, bold, DARK);
+  if (signatory.title) {
+    drawCentered(page, signatory.title, signY - 30, 10, regular, GRAY);
+  }
+}
+
 // Helper to draw centered text
 function drawCentered(
-  page: ReturnType<PDFDocument["addPage"]>,
+  page: PDFPage,
   text: string,
   y: number,
   size: number,

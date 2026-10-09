@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
+import { isAcceptedSignatureUrl } from "@/lib/certificate-signatory";
 
 export async function GET() {
   if (!(await isAdminAuthenticated())) {
@@ -20,6 +21,13 @@ export async function POST(request: NextRequest) {
   }
 
   const data = await request.json();
+  const signatureUrl = data.signatureUrl || null;
+  if (!isAcceptedSignatureUrl(signatureUrl)) {
+    return NextResponse.json(
+      { error: "La firma debe subirse desde el panel (carpeta de firmas)." },
+      { status: 400 }
+    );
+  }
 
   const maxOrder = await prisma.boardMember.aggregate({
     _max: { displayOrder: true },
@@ -32,6 +40,7 @@ export async function POST(request: NextRequest) {
       role: data.role || null,
       bio: data.bio || "",
       photoUrl: data.photoUrl || null,
+      signatureUrl,
       displayOrder: (maxOrder._max.displayOrder ?? 0) + 1,
     },
   });

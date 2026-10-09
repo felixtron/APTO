@@ -10,6 +10,9 @@ interface ImageUploadProps {
   folder?: string;
   aspectRatio?: string; // e.g. "16/9"
   placeholder?: string;
+  fit?: "cover" | "contain"; // contain shows the whole image (e.g. a signature)
+  accept?: string;
+  hint?: string;
 }
 
 export function ImageUpload({
@@ -18,6 +21,9 @@ export function ImageUpload({
   folder = "eventos",
   aspectRatio = "16/9",
   placeholder = "Arrastra una imagen o haz clic para seleccionar",
+  fit = "cover",
+  accept = "image/jpeg,image/png,image/webp,image/gif",
+  hint = "JPG, PNG o WebP — Máx. 10 MB",
 }: ImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -78,7 +84,7 @@ export function ImageUpload({
       <input
         ref={inputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/gif"
+        accept={accept}
         onChange={handleFileSelect}
         className="hidden"
       />
@@ -90,7 +96,7 @@ export function ImageUpload({
             <img
               src={value}
               alt="Preview"
-              className="h-full w-full object-cover"
+              className={`h-full w-full ${fit === "contain" ? "object-contain" : "object-cover"}`}
             />
           </div>
           <div className="absolute bottom-2 right-2 flex gap-1">
@@ -148,7 +154,7 @@ export function ImageUpload({
                 {placeholder}
               </p>
               <p className="mt-1 text-xs text-muted-foreground/60">
-                JPG, PNG o WebP — Máx. 10 MB
+                {hint}
               </p>
             </>
           )}

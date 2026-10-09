@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ImageUpload } from "@/components/admin/image-upload";
-import { Plus, Users, GripVertical, Pencil, Trash2, X } from "lucide-react";
+import { Plus, Users, GripVertical, Pencil, Trash2, X, PenLine } from "lucide-react";
 import Image from "next/image";
+import { SIGNATURE_FOLDER, isPresidentTitle, pickSignatory } from "@/lib/certificate-signature";
 
 interface BoardMember {
   id: string;
@@ -15,10 +16,18 @@ interface BoardMember {
   role: string | null;
   bio: string;
   photoUrl: string | null;
+  signatureUrl: string | null;
   displayOrder: number;
 }
 
-const emptyForm = { name: "", title: "", role: "", bio: "", photoUrl: null as string | null };
+const emptyForm = {
+  name: "",
+  title: "",
+  role: "",
+  bio: "",
+  photoUrl: null as string | null,
+  signatureUrl: null as string | null,
+};
 
 export default function AdminMesaDirectivaPage() {
   const [members, setMembers] = useState<BoardMember[]>([]);
@@ -27,6 +36,7 @@ export default function AdminMesaDirectivaPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   async function fetchMembers() {
     const res = await fetch("/api/admin/board-members");
@@ -52,12 +62,14 @@ export default function AdminMesaDirectivaPage() {
       role: member.role || "",
       bio: member.bio,
       photoUrl: member.photoUrl,
+      signatureUrl: member.signatureUrl,
     });
     setEditingId(member.id);
     setShowForm(true);
   }
 
   function closeForm() {
+    setError("");
     setShowForm(false);
     setEditingId(null);
     setForm(emptyForm);
@@ -66,20 +78,30 @@ export default function AdminMesaDirectivaPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
+    setError("");
 
     const url = editingId
       ? `/api/admin/board-members/${editingId}`
       : "/api/admin/board-members";
 
-    await fetch(url, {
-      method: editingId ? "PUT" : "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-
-    setSaving(false);
-    closeForm();
-    fetchMembers();
+    try {
+      const res = await fetch(url, {
+        method: editingId ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "No se pudo guardar. Intenta de nuevo.");
+        return;
+      }
+      closeForm();
+      fetchMembers();
+    } catch {
+      setError("Error de conexión al guardar.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleDelete(id: string) {
@@ -88,6 +110,8 @@ export default function AdminMesaDirectivaPage() {
     await fetch(`/api/admin/board-members/${id}`, { method: "DELETE" });
     fetchMembers();
   }
+
+  const signatory = pickSignatory(members);
 
   if (loading) {
     return (
@@ -173,6 +197,29 @@ export default function AdminMesaDirectivaPage() {
                 className="mt-1"
               />
             </div>
+            {isPresidentTitle(form.title) && (
+              <div className="sm:col-span-2">
+                <Label>Firma autógrafa</Label>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Aparece en todas las constancias mientras ocupe la presidencia.
+                </p>
+                <div className="mt-1 max-w-sm">
+                  <ImageUpload
+                    value={form.signatureUrl}
+                    onChange={(url) => setForm({ ...form, signatureUrl: url })}
+                    folder={SIGNATURE_FOLDER}
+                    aspectRatio="3/1"
+                    fit="contain"
+                    accept="image/png,image/jpeg"
+                    placeholder="Sube la firma escaneada"
+                    hint="PNG con fondo transparente (recomendado) o JPG"
+                  />
+                </div>
+              </div>
+            )}
+            {error && (
+              <p className="sm:col-span-2 text-sm text-destructive">{error}</p>
+            )}
             <div className="sm:col-span-2 flex gap-2">
               <Button type="submit" disabled={saving}>
                 {saving ? "Guardando..." : editingId ? "Actualizar" : "Crear"}
@@ -211,6 +258,18 @@ export default function AdminMesaDirectivaPage() {
               <p className="text-sm text-brand-500">{member.title}</p>
               {member.role && (
                 <p className="text-xs text-muted-foreground">{member.role}</p>
+              )}
+              {member.id === signatory?.id && (
+                <p
+                  className={`mt-1 flex items-center gap-1 text-xs ${
+                    member.signatureUrl ? "text-emerald-700" : "text-amber-700"
+                  }`}
+                >
+                  <PenLine className="h-3 w-3" />
+                  {member.signatureUrl
+                    ? "Firma las constancias"
+                    : "Firma las constancias — falta subir su firma"}
+                </p>
               )}
             </div>
             <div className="flex gap-1">

@@ -24,6 +24,9 @@ const PUBLIC_PREFIXES = [
   "public/",
 ];
 
+// Solo el admin puede verlos (la firma autógrafa de la presidencia).
+const ADMIN_ONLY_PREFIXES = ["firmas/"];
+
 // Tipos que el navegador puede mostrar en línea. Cualquier otro se fuerza a
 // descarga para que un HTML/SVG almacenado nunca se ejecute en nuestro origen.
 const INLINE_CONTENT_TYPES = new Set([
@@ -40,6 +43,10 @@ const INLINE_CONTENT_TYPES = new Set([
 
 function isPublicKey(key: string): boolean {
   return PUBLIC_PREFIXES.some((prefix) => key.startsWith(prefix));
+}
+
+function isAdminOnlyKey(key: string): boolean {
+  return ADMIN_ONLY_PREFIXES.some((prefix) => key.startsWith(prefix));
 }
 
 function isWellFormedKey(key: string): boolean {
@@ -89,7 +96,11 @@ export async function GET(
 
   // Guard: si no es público, requiere admin o miembro con membresía activa
   const publicFile = isPublicKey(fileKey);
-  if (!publicFile) {
+  if (isAdminOnlyKey(fileKey)) {
+    if (!(await isAdminAuthenticated())) {
+      return NextResponse.json({ error: "File not found" }, { status: 404 });
+    }
+  } else if (!publicFile) {
     const adminOk = await isAdminAuthenticated();
     if (!adminOk) {
       const membership = await getActiveMembership();

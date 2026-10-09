@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
+import { isAcceptedSignatureUrl } from "@/lib/certificate-signatory";
 
 export async function PUT(
   request: NextRequest,
@@ -12,6 +13,14 @@ export async function PUT(
 
   const { id } = await params;
   const data = await request.json();
+  // Absent leaves the signature as is; null or "" removes it.
+  const signatureUrl = data.signatureUrl === undefined ? undefined : data.signatureUrl || null;
+  if (signatureUrl !== undefined && !isAcceptedSignatureUrl(signatureUrl)) {
+    return NextResponse.json(
+      { error: "La firma debe subirse desde el panel (carpeta de firmas)." },
+      { status: 400 }
+    );
+  }
 
   const member = await prisma.boardMember.update({
     where: { id },
@@ -21,6 +30,7 @@ export async function PUT(
       role: data.role || null,
       bio: data.bio ?? undefined,
       photoUrl: data.photoUrl ?? undefined,
+      signatureUrl,
       displayOrder: data.displayOrder ?? undefined,
     },
   });

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateCertificatePdf, generateTrainingCertificatePdf } from "@/lib/generate-certificate";
+import { loadCertificateSignatory, type CertificateSignatory } from "@/lib/certificate-signatory";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
@@ -56,15 +57,16 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const president = await prisma.boardMember.findFirst({
-    where: {
-      active: true,
-      title: { contains: "Presidente", mode: "insensitive" },
-    },
-    orderBy: { displayOrder: "asc" },
-  });
-
-  const presidentName = president?.name ?? "Mesa Directiva APTO";
+  let signatory: CertificateSignatory;
+  try {
+    signatory = await loadCertificateSignatory();
+  } catch (error) {
+    console.error("Certificate signature load failed:", error);
+    return NextResponse.json(
+      { error: "No se pudo cargar la firma de la constancia. Intenta de nuevo más tarde." },
+      { status: 503 }
+    );
+  }
 
   let pdfBytes: Uint8Array;
   let sha256Hash: string;
@@ -76,7 +78,7 @@ export async function GET(request: NextRequest) {
       certificateId: certificate.certificateId,
       eventTitle: certificate.event.title,
       eventDate: certificate.event.scheduledAt,
-      presidentName,
+      signatory,
     }));
   } else {
     const periodStart = member.createdAt;
@@ -87,7 +89,7 @@ export async function GET(request: NextRequest) {
       certificateId: certificate.certificateId,
       periodStart,
       periodEnd,
-      presidentName,
+      signatory,
     }));
   }
 

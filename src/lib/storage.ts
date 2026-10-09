@@ -1,4 +1,9 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+  GetObjectCommand,
+} from "@aws-sdk/client-s3";
 
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID!;
 const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID!;
@@ -38,6 +43,24 @@ export async function uploadFile(
 
   // Fallback: serve through our own API proxy
   return `/api/files/${key}`;
+}
+
+/**
+ * Read a whole file from R2 (for small server-side assets, not for streaming).
+ */
+export async function downloadFile(key: string): Promise<Uint8Array> {
+  const object = await s3.send(
+    new GetObjectCommand({
+      Bucket: R2_BUCKET_NAME,
+      Key: key,
+    })
+  );
+
+  if (!object.Body) {
+    throw new Error(`Empty R2 object: ${key}`);
+  }
+
+  return object.Body.transformToByteArray();
 }
 
 /**
