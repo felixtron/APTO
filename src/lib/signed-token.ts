@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { safeEqual } from "@/lib/secure-compare";
 
-export type TokenPurpose = "admin-session" | "password-reset";
+export type TokenPurpose = "admin-session" | "password-reset" | "email-unsubscribe";
 
 export type TokenClaims = Record<string, unknown>;
 

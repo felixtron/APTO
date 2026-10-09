@@ -7,10 +7,10 @@ import {
   CONTACT_ADDRESS,
 } from "@/lib/constants";
 
-const FROM_ADDRESS =
+export const FROM_ADDRESS =
   process.env.RESEND_FROM || `APTO <${CONTACT_EMAIL}>`;
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://apto.org.mx";
+export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://apto.org.mx";
 
 // ---------------------------------------------------------------------------
 // Shared HTML helpers
@@ -18,7 +18,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://apto.org.mx";
 
 const LOGO_URL = `${APP_URL}/logo/logoAPTO.png`;
 
-function emailLayout(body: string): string {
+export function emailLayout(body: string): string {
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -68,7 +68,7 @@ function emailLayout(body: string): string {
 </html>`;
 }
 
-function buttonHtml(href: string, label: string): string {
+export function buttonHtml(href: string, label: string): string {
   return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0;">
   <tr>
     <td style="background-color:#2D7A3A;border-radius:6px;">

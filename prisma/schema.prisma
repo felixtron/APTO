@@ -29,6 +29,13 @@ model Member {
   subscriptionId   String? @unique
   subscriptionEnd  DateTime?
 
+  // null = nunca ha creado su contraseña (cuentas del padrón o creadas por admin)
+  passwordSetAt DateTime?
+
+  // Recordatorio mensual de pago (cron payment-reminders)
+  paymentReminderOptOut Boolean   @default(false)
+  lastPaymentReminderAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -308,6 +315,7 @@ model BoardMember {
   role         String? // "Delegada ante WFOT"
   bio          String
   photoUrl     String?
+  signatureUrl String? // Firma autógrafa (PNG/JPG en R2 firmas/); la de la presidencia va en las constancias
   displayOrder Int     @default(0)
   active       Boolean @default(true)
 

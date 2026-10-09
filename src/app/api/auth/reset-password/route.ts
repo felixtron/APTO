@@ -60,7 +60,7 @@ export async function POST(request: Request) {
 
     await prisma.member.update({
       where: { id: member.id },
-      data: { passwordHash },
+      data: { passwordHash, passwordSetAt: new Date() },
     });
 
     return NextResponse.json(

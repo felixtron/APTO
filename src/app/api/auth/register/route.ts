@@ -137,7 +137,7 @@ async function activateExistingAccount(
   );
   const activated = await prisma.member.update({
     where: { id: member.id },
-    data: { ...paid, status: "ACTIVE", passwordHash },
+    data: { ...paid, status: "ACTIVE", passwordHash, passwordSetAt: null },
     select: { email: true, name: true, passwordHash: true },
   });
   await createMembershipCertificate(member.id);
@@ -193,6 +193,7 @@ export async function POST(request: NextRequest) {
               name,
               email: normalizedEmail,
               passwordHash,
+              passwordSetAt: new Date(),
               phone: phone || null,
               memberNumber,
               institution: institution || null,
@@ -223,6 +224,7 @@ export async function POST(request: NextRequest) {
             name,
             email: normalizedEmail,
             passwordHash,
+            passwordSetAt: new Date(),
             phone: phone || null,
             memberNumber,
             type: "PROFESSIONAL",
