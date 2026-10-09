@@ -12,6 +12,7 @@ const emptyForm = {
   institution: "",
   cedula: "",
   specialty: "",
+  memberNumber: "",
   paymentMethod: "efectivo",
   subscriptionEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
     .toISOString()
@@ -25,24 +26,31 @@ export function CreateMemberForm() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [canOverride, setCanOverride] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    void submit(false);
+  }
+
+  async function submit(allowReserved: boolean) {
     setSaving(true);
     setError("");
     setSuccess("");
+    setCanOverride(false);
 
     try {
       const res = await fetch("/api/admin/members", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, allowReserved }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
         setError(data.error || "Error al crear miembro");
+        setCanOverride(data.overridable === true);
         setSaving(false);
         return;
       }
@@ -151,6 +159,20 @@ export function CreateMemberForm() {
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium">
+            No. de socio
+          </label>
+          <input
+            value={form.memberNumber}
+            onChange={(e) => setForm({ ...form, memberNumber: e.target.value })}
+            placeholder="Automático (LTO0000)"
+            className="w-full rounded-md border px-3 py-2 text-sm"
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            Vacío: se usa el del padrón según el email, o el siguiente libre.
+          </p>
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium">
             Método de pago
           </label>
           <select
@@ -183,6 +205,16 @@ export function CreateMemberForm() {
       {error && (
         <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
           {error}
+          {canOverride && (
+            <button
+              type="button"
+              disabled={saving}
+              onClick={() => submit(true)}
+              className="ml-2 font-medium underline"
+            >
+              Es la misma persona: asignar
+            </button>
+          )}
         </p>
       )}
       {success && (

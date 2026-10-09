@@ -38,6 +38,17 @@ model Member {
   @@index([status])
 }
 
+// Padrón de socios (Base de Miembros APTO.xlsx). Reserva el número de cada
+// persona para que lo conserve cuando se registre en el portal.
+model MemberRoster {
+  memberNumber String   @id
+  name         String
+  email        String?  @unique
+  note         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
 enum MemberType {
   PROFESSIONAL
   STUDENT

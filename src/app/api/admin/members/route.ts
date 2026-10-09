@@ -4,15 +4,12 @@ import { isAdminAuthenticated } from "@/lib/admin-auth";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { createMembershipCertificate } from "@/lib/generate-certificate";
-
-function generateMemberNumber(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  const initials = (
-    (parts[0]?.[0] ?? "") + (parts[parts.length - 1]?.[0] ?? "")
-  ).toUpperCase();
-  const digits = Math.floor(1000000 + Math.random() * 9000000).toString();
-  return `${digits}${initials}`;
-}
+import {
+  createWithMemberNumber,
+  findMemberNumberConflict,
+  isUniqueViolation,
+} from "@/lib/assign-member-number";
+import { normalizeMemberNumber } from "@/lib/member-number";
 
 export async function POST(request: NextRequest) {
   if (!(await isAdminAuthenticated())) {
@@ -44,14 +41,30 @@ export async function POST(request: NextRequest) {
     const tempPassword = crypto.randomBytes(16).toString("hex");
     const passwordHash = await bcrypt.hash(tempPassword, 10);
 
-    // Generate unique member number
-    let memberNumber = generateMemberNumber(data.name);
-    let attempts = 0;
-    while (attempts < 5) {
-      const dup = await prisma.member.findUnique({ where: { memberNumber } });
-      if (!dup) break;
-      memberNumber = generateMemberNumber(data.name);
-      attempts++;
+    // An explicit number lets the admin seat someone the roster could not
+    // match by email (no email on file, or one shared with another person).
+    const requestedNumber =
+      typeof data.memberNumber === "string" && data.memberNumber.trim()
+        ? normalizeMemberNumber(data.memberNumber)
+        : null;
+    if (data.memberNumber && !requestedNumber) {
+      return NextResponse.json(
+        { error: "Número de socio inválido (formato LTO0000)" },
+        { status: 400 }
+      );
+    }
+    if (requestedNumber) {
+      const conflict = await findMemberNumberConflict(
+        requestedNumber,
+        { email },
+        data.allowReserved === true
+      );
+      if (conflict) {
+        return NextResponse.json(
+          { error: conflict.message, overridable: conflict.overridable },
+          { status: 409 }
+        );
+      }
     }
 
     // Calculate subscription end (1 year from now by default)
@@ -59,21 +72,25 @@ export async function POST(request: NextRequest) {
       ? new Date(data.subscriptionEnd)
       : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
 
-    const member = await prisma.member.create({
-      data: {
-        name: data.name,
-        email,
-        passwordHash,
-        phone: data.phone || null,
-        memberNumber,
-        type: "PROFESSIONAL",
-        status: "ACTIVE",
-        institution: data.institution || null,
-        cedula: data.cedula || null,
-        specialty: data.specialty || null,
-        subscriptionEnd,
-      },
-    });
+    const createMember = (memberNumber: string) =>
+      prisma.member.create({
+        data: {
+          name: data.name,
+          email,
+          passwordHash,
+          phone: data.phone || null,
+          memberNumber,
+          type: "PROFESSIONAL",
+          status: "ACTIVE",
+          institution: data.institution || null,
+          cedula: data.cedula || null,
+          specialty: data.specialty || null,
+          subscriptionEnd,
+        },
+      });
+    const member = requestedNumber
+      ? await createMember(requestedNumber)
+      : (await createWithMemberNumber(email, createMember)).record;
 
     // Auto-create membership certificate
     await createMembershipCertificate(member.id);
@@ -89,6 +106,12 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
+    if (isUniqueViolation(error)) {
+      return NextResponse.json(
+        { error: "El email o el número de socio ya está en uso" },
+        { status: 409 }
+      );
+    }
     console.error("Error creating member:", error);
     return NextResponse.json(
       { error: "Error al crear miembro" },

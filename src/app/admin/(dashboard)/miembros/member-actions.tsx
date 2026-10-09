@@ -53,6 +53,34 @@ export function MemberActions({ member }: { member: MemberSummary }) {
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [resetSent, setResetSent] = useState(false);
+  const [memberNumber, setMemberNumber] = useState(member.memberNumber ?? "");
+  const [numberError, setNumberError] = useState("");
+  const [canOverride, setCanOverride] = useState(false);
+
+  async function saveMemberNumber(allowReserved = false) {
+    setLoading(true);
+    setNumberError("");
+    setCanOverride(false);
+    try {
+      const res = await fetch(`/api/admin/members/${member.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memberNumber, allowReserved }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setNumberError(data.error || "Error al guardar el número");
+        setCanOverride(data.overridable === true);
+        return;
+      }
+      setMemberNumber(data.memberNumber ?? memberNumber);
+      router.refresh();
+    } catch {
+      setNumberError("Error de conexión");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function updateStatus(newStatus: string) {
     setLoading(true);
@@ -119,7 +147,42 @@ export function MemberActions({ member }: { member: MemberSummary }) {
             </div>
             <div>
               <p className="text-muted-foreground">No. Miembro</p>
-              <p className="font-medium">{member.memberNumber || "---"}</p>
+              <div className="flex items-center gap-1">
+                <input
+                  value={memberNumber}
+                  onChange={(e) => {
+                    setMemberNumber(e.target.value);
+                    setNumberError("");
+                    setCanOverride(false);
+                  }}
+                  placeholder="LTO0000"
+                  aria-label="Número de socio"
+                  className="w-24 rounded-md border px-2 py-1 text-sm font-medium"
+                />
+                {memberNumber !== (member.memberNumber ?? "") && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={loading || !memberNumber.trim()}
+                    onClick={() => saveMemberNumber()}
+                  >
+                    Guardar
+                  </Button>
+                )}
+              </div>
+              {numberError && (
+                <p className="mt-1 text-xs text-red-600">{numberError}</p>
+              )}
+              {canOverride && (
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => saveMemberNumber(true)}
+                  className="mt-1 text-xs font-medium text-brand-600 underline"
+                >
+                  Es la misma persona: asignar
+                </button>
+              )}
             </div>
             <div>
               <p className="text-muted-foreground">Estado</p>

@@ -22,6 +22,7 @@ function RegistroForm() {
   const [error, setError] = useState("");
   const [sessionData, setSessionData] = useState<SessionData | null>(null);
   const [loadingSession, setLoadingSession] = useState(false);
+  const [activatedExisting, setActivatedExisting] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
@@ -68,9 +69,13 @@ function RegistroForm() {
         }),
       });
 
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const data = await res.json();
         setError(data.error || "Error al registrar");
+        return;
+      }
+      if (data.existingAccount) {
+        setActivatedExisting(true);
         return;
       }
 
@@ -130,6 +135,18 @@ function RegistroForm() {
           )}
         </CardHeader>
         <CardContent>
+          {activatedExisting ? (
+            <div className="space-y-3 text-center text-sm">
+              <p className="font-medium text-green-700">
+                Tu membresía quedó activa.
+              </p>
+              <p className="text-muted-foreground">
+                Ya tenías una cuenta de socio con {sessionData?.email}. Te
+                enviamos un correo para que crees tu contraseña y entres al
+                portal.
+              </p>
+            </div>
+          ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label htmlFor="name">Nombre completo</Label>
@@ -208,6 +225,7 @@ function RegistroForm() {
                   : "Crear cuenta"}
             </Button>
           </form>
+          )}
           <p className="mt-4 text-center text-sm text-muted-foreground">
             ¿Ya tienes cuenta?{" "}
             <Link
