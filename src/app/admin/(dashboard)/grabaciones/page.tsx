@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus, Pencil, Trash2, X, Video } from "lucide-react";
+import { RECORDING_TOPICS } from "@/lib/recording-topics";
 
 interface Recording {
   id: string;
@@ -25,6 +26,7 @@ interface Recording {
   duration: number | null;
   eventTitle: string | null;
   category: string | null;
+  topics: string[];
   active: boolean;
   displayOrder: number;
 }
@@ -37,6 +39,7 @@ const emptyForm = {
   duration: "",
   eventTitle: "",
   category: "",
+  topics: [] as string[],
   active: true,
 };
 
@@ -74,6 +77,7 @@ export default function AdminGrabacionesPage() {
       duration: recording.duration?.toString() || "",
       eventTitle: recording.eventTitle || "",
       category: recording.category || "",
+      topics: recording.topics ?? [],
       active: recording.active,
     });
     setEditingId(recording.id);
@@ -84,6 +88,15 @@ export default function AdminGrabacionesPage() {
     setShowForm(false);
     setEditingId(null);
     setForm(emptyForm);
+  }
+
+  function toggleTopic(topic: string) {
+    setForm((current) => ({
+      ...current,
+      topics: current.topics.includes(topic)
+        ? current.topics.filter((item) => item !== topic)
+        : [...current.topics, topic],
+    }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -227,6 +240,27 @@ export default function AdminGrabacionesPage() {
                 className="mt-1"
               />
             </div>
+            <fieldset className="sm:col-span-2">
+              <legend className="text-sm font-medium">
+                Temas (filtros del Día Mundial)
+              </legend>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                {RECORDING_TOPICS.map((topic) => (
+                  <label
+                    key={topic}
+                    className="flex items-center gap-2 text-sm"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={form.topics.includes(topic)}
+                      onChange={() => toggleTopic(topic)}
+                      className="h-4 w-4 rounded border-gray-300"
+                    />
+                    {topic}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
             <div className="flex items-center gap-2 self-end">
               <input
                 id="active"
@@ -269,6 +303,9 @@ export default function AdminGrabacionesPage() {
                   {recording.category && (
                     <Badge variant="secondary" className="text-[10px]">{recording.category}</Badge>
                   )}
+                  {recording.topics.map((topic) => (
+                    <Badge key={topic} variant="outline" className="text-[10px]">{topic}</Badge>
+                  ))}
                   <span>{recording.duration ? `${recording.duration} min` : "—"}</span>
                   <Badge
                     className={`text-[10px] ${recording.active ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-800"}`}
@@ -304,6 +341,7 @@ export default function AdminGrabacionesPage() {
             <TableRow>
               <TableHead>Título</TableHead>
               <TableHead>Categoría</TableHead>
+              <TableHead>Temas</TableHead>
               <TableHead>Duración</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead />
@@ -324,6 +362,19 @@ export default function AdminGrabacionesPage() {
                   {recording.category && (
                     <Badge variant="secondary">{recording.category}</Badge>
                   )}
+                </TableCell>
+                <TableCell>
+                  <div className="flex max-w-xs flex-wrap gap-1">
+                    {recording.topics.length === 0 ? (
+                      <span className="text-xs text-muted-foreground">Sin tema</span>
+                    ) : (
+                      recording.topics.map((topic) => (
+                        <Badge key={topic} variant="outline" className="text-[10px]">
+                          {topic}
+                        </Badge>
+                      ))
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
                   {recording.duration ? `${recording.duration} min` : "—"}

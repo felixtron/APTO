@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
+import { parseTopics } from "@/lib/recording-topics";
 
 export async function PUT(
   request: NextRequest,
@@ -23,6 +24,7 @@ export async function PUT(
       duration: data.duration ? parseInt(data.duration, 10) : null,
       eventTitle: data.eventTitle || null,
       category: data.category || null,
+      topics: data.topics === undefined ? undefined : parseTopics(data.topics),
       active: data.active ?? undefined,
       displayOrder: data.displayOrder ?? undefined,
     },

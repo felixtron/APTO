@@ -297,6 +297,7 @@ model Recording {
   duration     Int? // Minutos
   eventTitle   String?
   category     String?
+  topics       String[] @default([]) // Temas para filtros públicos (ver src/lib/recording-topics.ts)
   active       Boolean @default(true)
   displayOrder Int     @default(0)
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
+import { parseTopics } from "@/lib/recording-topics";
 
 export async function GET() {
   if (!(await isAdminAuthenticated())) {
@@ -33,6 +34,7 @@ export async function POST(request: NextRequest) {
       duration: data.duration ? parseInt(data.duration, 10) : null,
       eventTitle: data.eventTitle || null,
       category: data.category || null,
+      topics: parseTopics(data.topics),
       active: data.active ?? true,
       displayOrder: (maxOrder._max.displayOrder ?? 0) + 1,
     },

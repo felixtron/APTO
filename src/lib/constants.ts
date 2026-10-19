@@ -1,3 +1,4 @@
+export const SITE_URL = "https://apto.org.mx";
 export const SITE_NAME = "APTO - Asociación de Profesionales en Terapia Ocupacional";
 export const SITE_DESCRIPTION =
   "Impulsamos la Terapia Ocupacional en México desde 1993. Membresías, eventos, recursos profesionales.";
