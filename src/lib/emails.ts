@@ -470,6 +470,7 @@ export async function sendCampaignAccessEmail(params: {
   const url = `${APP_URL}/dia-mundial`;
 
   const html = emailLayout(`
+    <img src="${APP_URL}/dia-mundial/logo-oficial.png" alt="Día Mundial de la Terapia Ocupacional 2026: La participación importa" width="320" style="display:block;margin:0 auto 24px;max-width:100%;height:auto;" />
     <h2 style="margin:0 0 16px;font-size:22px;color:#1B4F7A;">¡Hola, ${firstName}! Ya estás registrado</h2>
     <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#374151;">
       Gracias por sumarte al <strong>Día Mundial de la Terapia Ocupacional 2026</strong>,

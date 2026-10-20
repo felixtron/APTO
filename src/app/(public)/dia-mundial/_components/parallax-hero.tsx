@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button";
 import { DIA_MUNDIAL, type EventWindowStatus } from "@/lib/dia-mundial";
 
 /** Fracción del scroll que recorre la imagen: menor = más lento que la página. */
-const PARALLAX_FACTOR = 0.35;
+const PARALLAX_FACTOR = 0.2;
+/** Margen extra (porcentaje del alto) que la imagen sobresale para no dejar huecos. */
+const BLEED_PERCENT = 8;
 
 interface ParallaxHeroProps {
   status: EventWindowStatus;
@@ -16,88 +18,66 @@ interface ParallaxHeroProps {
 }
 
 export function ParallaxHero({ status, registered }: ParallaxHeroProps) {
+  const frameRef = useRef<HTMLDivElement>(null);
   const layerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const frameEl = frameRef.current;
     const layer = layerRef.current;
-    if (!layer) return;
+    if (!frameEl || !layer) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-    let frame = 0;
+    let raf = 0;
     const update = () => {
-      frame = 0;
-      layer.style.transform = `translate3d(0, ${window.scrollY * PARALLAX_FACTOR}px, 0)`;
+      raf = 0;
+      const maxShift = (frameEl.clientHeight * BLEED_PERCENT) / 100;
+      const shift = Math.min(window.scrollY * PARALLAX_FACTOR, maxShift);
+      layer.style.transform = `translate3d(0, ${shift}px, 0)`;
     };
     const onScroll = () => {
-      if (frame === 0) frame = window.requestAnimationFrame(update);
+      if (raf === 0) raf = window.requestAnimationFrame(update);
     };
 
     update();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       window.removeEventListener("scroll", onScroll);
-      if (frame !== 0) window.cancelAnimationFrame(frame);
+      if (raf !== 0) window.cancelAnimationFrame(raf);
     };
   }, []);
 
   const canRegister = status !== "closed" && !registered;
 
   return (
-    <section className="relative flex min-h-[85svh] items-center overflow-hidden bg-brand-900 text-white">
-      {/* Capa con imagen: más alta que la sección para que el desplazamiento no deje huecos */}
+    <section className="bg-brand-900 text-white">
+      {/* Banner oficial: ya incluye título, tema y fecha, por eso el h1 es solo para lectores de pantalla */}
+      <h1 className="sr-only">
+        {DIA_MUNDIAL.title} 2026: {DIA_MUNDIAL.theme}
+      </h1>
       <div
-        ref={layerRef}
-        aria-hidden="true"
-        className="absolute inset-x-0 -top-[40%] h-[140%] will-change-transform"
+        ref={frameRef}
+        className="relative aspect-video max-h-[58svh] min-h-[200px] w-full overflow-hidden bg-[#dbe9f3]"
       >
-        <Image
-          src={DIA_MUNDIAL.heroImage}
-          alt=""
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover"
-        />
+        <div
+          ref={layerRef}
+          className="absolute inset-x-0 will-change-transform"
+          style={{ top: `-${BLEED_PERCENT}%`, height: `${100 + BLEED_PERCENT}%` }}
+        >
+          <Image
+            src={DIA_MUNDIAL.heroImage}
+            alt={`${DIA_MUNDIAL.title}, 27 de octubre de 2026: ${DIA_MUNDIAL.theme}`}
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover"
+          />
+        </div>
       </div>
-      <div className="absolute inset-0 bg-gradient-to-b from-brand-900/85 via-brand-900/60 to-brand-900/85" />
 
-      <div className="relative z-10 mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 sm:py-28 lg:px-8">
-        <div className="mx-auto max-w-3xl text-center">
-          {/* Evento conjunto */}
+      {/* Franja de acción: evento conjunto y registro */}
+      <div className="bg-gradient-to-b from-brand-800 to-brand-900">
+        <div className="mx-auto flex max-w-3xl flex-col items-center gap-7 px-4 py-10 text-center sm:px-6 sm:py-12">
           <div className="flex flex-col items-center gap-3">
-            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-100">
-              Un evento conjunto de
-            </span>
-            <div className="flex items-center gap-4 rounded-2xl bg-white px-5 py-3 shadow-xl sm:gap-6 sm:px-8 sm:py-4">
-              <Image
-                src={DIA_MUNDIAL.aptoLogo}
-                alt="APTO, Asociación de Profesionales en Terapia Ocupacional"
-                width={140}
-                height={48}
-                className="h-9 w-auto sm:h-12"
-                priority
-              />
-              <span aria-hidden="true" className="h-8 w-px bg-brand-100 sm:h-10" />
-              <Image
-                src={DIA_MUNDIAL.coteocLogo}
-                alt={DIA_MUNDIAL.coteocName}
-                width={240}
-                height={86}
-                className="h-9 w-auto sm:h-12"
-                priority
-              />
-            </div>
-          </div>
-
-          <h1 className="mt-8 text-4xl font-bold tracking-tight drop-shadow-lg sm:text-5xl lg:text-6xl">
-            {DIA_MUNDIAL.title}
-          </h1>
-          <p className="mt-4 text-2xl font-semibold text-green-300 sm:text-3xl">
-            &ldquo;{DIA_MUNDIAL.theme}&rdquo;
-          </p>
-
-          {/* CTA principal: registro gratuito */}
-          <div className="mt-10 flex flex-col items-center gap-3">
             {canRegister ? (
               <>
                 <a
@@ -122,7 +102,30 @@ export function ParallaxHero({ status, registered }: ParallaxHeroProps) {
             )}
           </div>
 
-          <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <div className="flex flex-col items-center gap-3">
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-100">
+              Un evento conjunto de
+            </span>
+            <div className="flex items-center gap-4 rounded-2xl bg-white px-5 py-3 shadow-xl sm:gap-6 sm:px-8 sm:py-4">
+              <Image
+                src={DIA_MUNDIAL.aptoLogo}
+                alt="APTO, Asociación de Profesionales en Terapia Ocupacional"
+                width={140}
+                height={48}
+                className="h-9 w-auto sm:h-12"
+              />
+              <span aria-hidden="true" className="h-8 w-px bg-brand-100 sm:h-10" />
+              <Image
+                src={DIA_MUNDIAL.coteocLogo}
+                alt={DIA_MUNDIAL.coteocName}
+                width={240}
+                height={86}
+                className="h-9 w-auto sm:h-12"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             {status === "open" && registered && (
               <Button
                 size="lg"
@@ -136,7 +139,7 @@ export function ParallaxHero({ status, registered }: ParallaxHeroProps) {
             <Button
               size="lg"
               render={<Link href="/membresia" />}
-              className="!border-white !bg-transparent !text-white backdrop-blur-sm hover:!bg-white/20"
+              className="!border-white !bg-transparent !text-white hover:!bg-white/20"
             >
               Únete a APTO
               <ArrowRight className="ml-2 h-4 w-4" />

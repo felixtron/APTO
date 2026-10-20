@@ -16,7 +16,10 @@ export const DIA_MUNDIAL = {
   startsOn: "2026-10-27",
   endsOn: "2026-10-31",
   dateLabel: "Del 27 al 31 de octubre",
-  heroImage: "/dia-mundial/hero.jpg",
+  /** Banner oficial de la campaña (16:9, ya incluye título, tema y fecha). */
+  heroImage: "/dia-mundial/banner.jpg",
+  /** Logotipo oficial de la campaña, fondo transparente. */
+  campaignLogo: "/dia-mundial/logo-oficial.png",
   aptoLogo: "/logo/logoAPTO.png",
   coteocLogo: "/dia-mundial/coteoc.png",
   coteocName: "COTEOC, Colegio de Terapeutas Ocupacionales de México",
