@@ -3,24 +3,19 @@
 import { useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, PlayCircle, Sparkles } from "lucide-react";
+import { ArrowRight, CheckCircle2, PlayCircle, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DIA_MUNDIAL, type EventWindowStatus } from "@/lib/dia-mundial";
 
 /** Fracción del scroll que recorre la imagen: menor = más lento que la página. */
 const PARALLAX_FACTOR = 0.35;
 
-const STATUS_LABEL: Record<EventWindowStatus, string> = {
-  upcoming: "Próximamente · acceso libre",
-  open: "Acceso libre abierto",
-  closed: "Gracias por participar",
-};
-
 interface ParallaxHeroProps {
   status: EventWindowStatus;
+  registered: boolean;
 }
 
-export function ParallaxHero({ status }: ParallaxHeroProps) {
+export function ParallaxHero({ status, registered }: ParallaxHeroProps) {
   const layerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -45,8 +40,10 @@ export function ParallaxHero({ status }: ParallaxHeroProps) {
     };
   }, []);
 
+  const canRegister = status !== "closed" && !registered;
+
   return (
-    <section className="relative flex min-h-[80svh] items-center overflow-hidden bg-brand-900 text-white">
+    <section className="relative flex min-h-[85svh] items-center overflow-hidden bg-brand-900 text-white">
       {/* Capa con imagen: más alta que la sección para que el desplazamiento no deje huecos */}
       <div
         ref={layerRef}
@@ -64,26 +61,69 @@ export function ParallaxHero({ status }: ParallaxHeroProps) {
       </div>
       <div className="absolute inset-0 bg-gradient-to-b from-brand-900/85 via-brand-900/60 to-brand-900/85" />
 
-      <div className="relative z-10 mx-auto w-full max-w-7xl px-4 py-24 sm:px-6 sm:py-32 lg:px-8">
+      <div className="relative z-10 mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 sm:py-28 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
-          <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-sm font-medium backdrop-blur-sm">
-            <Sparkles className="h-4 w-4 text-green-300" />
-            {DIA_MUNDIAL.dateLabel} · {STATUS_LABEL[status]}
-          </span>
-          <h1 className="mt-6 text-4xl font-bold tracking-tight drop-shadow-lg sm:text-5xl lg:text-6xl">
+          {/* Evento conjunto */}
+          <div className="flex flex-col items-center gap-3">
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-100">
+              Un evento conjunto de
+            </span>
+            <div className="flex items-center gap-4 rounded-2xl bg-white px-5 py-3 shadow-xl sm:gap-6 sm:px-8 sm:py-4">
+              <Image
+                src={DIA_MUNDIAL.aptoLogo}
+                alt="APTO, Asociación de Profesionales en Terapia Ocupacional"
+                width={140}
+                height={48}
+                className="h-9 w-auto sm:h-12"
+                priority
+              />
+              <span aria-hidden="true" className="h-8 w-px bg-brand-100 sm:h-10" />
+              <Image
+                src={DIA_MUNDIAL.coteocLogo}
+                alt={DIA_MUNDIAL.coteocName}
+                width={240}
+                height={86}
+                className="h-9 w-auto sm:h-12"
+                priority
+              />
+            </div>
+          </div>
+
+          <h1 className="mt-8 text-4xl font-bold tracking-tight drop-shadow-lg sm:text-5xl lg:text-6xl">
             {DIA_MUNDIAL.title}
           </h1>
           <p className="mt-4 text-2xl font-semibold text-green-300 sm:text-3xl">
             &ldquo;{DIA_MUNDIAL.theme}&rdquo;
           </p>
-          <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-blue-100">
-            Celebramos el Día Mundial de la Terapia Ocupacional abriendo
-            nuestra biblioteca de conferencias a toda la comunidad. Participa,
-            aprende y súmate a la asociación que representa a la profesión en
-            México.
-          </p>
-          <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            {status === "open" && (
+
+          {/* CTA principal: registro gratuito */}
+          <div className="mt-10 flex flex-col items-center gap-3">
+            {canRegister ? (
+              <>
+                <a
+                  href="#registro"
+                  className="inline-flex items-center gap-3 rounded-full bg-green-500 px-8 py-4 text-lg font-bold text-white shadow-2xl shadow-green-900/40 ring-4 ring-white/20 transition hover:bg-green-400 hover:ring-white/40 focus:outline-none focus-visible:ring-white sm:px-10 sm:py-5 sm:text-xl"
+                >
+                  <UserPlus className="h-6 w-6" />
+                  Registro gratuito
+                  <ArrowRight className="h-5 w-5" />
+                </a>
+                <p className="text-sm text-blue-100">
+                  {DIA_MUNDIAL.dateLabel} · Sin costo y sin membresía
+                </p>
+              </>
+            ) : (
+              <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-5 py-2 text-base font-medium backdrop-blur-sm">
+                <CheckCircle2 className="h-5 w-5 text-green-300" />
+                {status === "closed"
+                  ? "Gracias por participar"
+                  : `Ya estás registrado · ${DIA_MUNDIAL.dateLabel}`}
+              </span>
+            )}
+          </div>
+
+          <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            {status === "open" && registered && (
               <Button
                 size="lg"
                 className="bg-white font-bold text-brand-700 shadow-lg hover:bg-blue-50"
@@ -96,11 +136,7 @@ export function ParallaxHero({ status }: ParallaxHeroProps) {
             <Button
               size="lg"
               render={<Link href="/membresia" />}
-              className={
-                status === "open"
-                  ? "!border-white !bg-transparent !text-white backdrop-blur-sm hover:!bg-white/20"
-                  : "bg-white font-bold text-brand-700 shadow-lg hover:bg-blue-50"
-              }
+              className="!border-white !bg-transparent !text-white backdrop-blur-sm hover:!bg-white/20"
             >
               Únete a APTO
               <ArrowRight className="ml-2 h-4 w-4" />

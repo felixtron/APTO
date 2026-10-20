@@ -456,3 +456,41 @@ export async function sendPaymentFailedAlert(params: {
     console.error("Failed to send payment failed alert:", error);
   }
 }
+
+// ---------------------------------------------------------------------------
+// Día Mundial de la TO — registro gratuito
+// ---------------------------------------------------------------------------
+
+export async function sendCampaignAccessEmail(params: {
+  name: string;
+  email: string;
+}): Promise<void> {
+  const { name, email } = params;
+  const firstName = escapeHtml(name.split(" ")[0]);
+  const url = `${APP_URL}/dia-mundial`;
+
+  const html = emailLayout(`
+    <h2 style="margin:0 0 16px;font-size:22px;color:#1B4F7A;">¡Hola, ${firstName}! Ya estás registrado</h2>
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#374151;">
+      Gracias por sumarte al <strong>Día Mundial de la Terapia Ocupacional 2026</strong>,
+      un evento conjunto de APTO y COTEOC con el tema <em>“La participación importa”</em>.
+    </p>
+    <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#374151;">
+      Del <strong>27 al 31 de octubre</strong> tendrás acceso gratuito a nuestra biblioteca
+      de conferencias. Entra con el mismo navegador o vuelve a registrarte con este correo
+      si lo haces desde otro dispositivo.
+    </p>
+    ${buttonHtml(url, "Entrar a las grabaciones")}
+  `);
+
+  try {
+    await getResend().emails.send({
+      from: FROM_ADDRESS,
+      to: email,
+      subject: "Tu registro al Día Mundial de la Terapia Ocupacional 2026",
+      html,
+    });
+  } catch (error) {
+    console.error("Error enviando correo de registro Día Mundial:", error);
+  }
+}

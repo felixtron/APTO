@@ -6,6 +6,8 @@ import { TIMEZONE } from "@/lib/constants";
  */
 export const DIA_MUNDIAL = {
   path: "/dia-mundial",
+  /** Identifica los registros gratuitos de esta campaña en la BD. */
+  campaign: "dia-mundial-2026",
   navLabel: "Día Mundial TO",
   title: "Día Mundial de la Terapia Ocupacional",
   year: 2026,
@@ -15,6 +17,9 @@ export const DIA_MUNDIAL = {
   endsOn: "2026-10-31",
   dateLabel: "Del 27 al 31 de octubre",
   heroImage: "/dia-mundial/hero.jpg",
+  aptoLogo: "/logo/logoAPTO.png",
+  coteocLogo: "/dia-mundial/coteoc.png",
+  coteocName: "COTEOC, Colegio de Terapeutas Ocupacionales de México",
   /** Enlace para unirse al Colegio. Vacío = el CTA no se muestra. */
   colegioUrl: "https://www.coteoc.mx/",
 } as const;

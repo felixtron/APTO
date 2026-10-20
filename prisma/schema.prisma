@@ -364,3 +364,20 @@ model SpecialEvent {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// ═══════════════════════════════════════
+// REGISTROS DE CAMPAÑAS (acceso gratuito, sin membresía)
+// ═══════════════════════════════════════
+
+model CampaignRegistration {
+  id            String    @id @default(cuid())
+  campaign      String // ej. "dia-mundial-2026"
+  name          String
+  email         String
+  acceptsEmails Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  lastAccessAt  DateTime?
+
+  @@unique([campaign, email])
+  @@index([campaign, createdAt])
+}

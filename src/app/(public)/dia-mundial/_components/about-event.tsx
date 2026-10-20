@@ -4,8 +4,8 @@ import { DIA_MUNDIAL } from "@/lib/dia-mundial";
 const highlights = [
   {
     icon: Globe2,
-    title: "Una celebración mundial",
-    text: "Cada 27 de octubre la Federación Mundial de Terapeutas Ocupacionales (WFOT) y sus asociaciones miembro visibilizan el aporte de la profesión en todo el mundo.",
+    title: "Organizado por APTO y COTEOC",
+    text: "La Asociación de Profesionales en Terapia Ocupacional y el Colegio de Terapeutas Ocupacionales de México celebran juntos el día en que la WFOT visibiliza a la profesión en todo el mundo.",
   },
   {
     icon: CalendarDays,

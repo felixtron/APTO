@@ -23,6 +23,7 @@ import {
   UserCog,
   Video,
   Mail,
+  ClipboardList,
   ExternalLink,
 } from "lucide-react";
 import { StripeModeToggle } from "./stripe-mode-toggle";
@@ -40,6 +41,7 @@ const adminLinks = [
   { href: "/admin/mesa-directiva", label: "Mesa Directiva", icon: UserCog },
   { href: "/admin/grabaciones", label: "Grabaciones", icon: Video },
   { href: "/admin/newsletter", label: "Newsletter", icon: Mail },
+  { href: "/admin/dia-mundial", label: "Día Mundial", icon: ClipboardList },
 ];
 
 export function AdminMobileNav() {

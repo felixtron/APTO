@@ -8,6 +8,8 @@ import { ParallaxHero } from "./_components/parallax-hero";
 import { RecordingsGallery } from "./_components/recordings-gallery";
 import { EventStatusNotice } from "./_components/event-status-notice";
 import { EventCtas } from "./_components/event-ctas";
+import { RegistrationSection } from "./_components/registration-section";
+import { getCampaignAccess } from "@/lib/campaign-access";
 import { AboutEvent } from "./_components/about-event";
 
 const PAGE_DESCRIPTION = `${DIA_MUNDIAL.theme}. ${DIA_MUNDIAL.dateLabel} abrimos de forma gratuita la biblioteca de conferencias de APTO para celebrar el Día Mundial de la Terapia Ocupacional.`;
@@ -25,10 +27,12 @@ export const metadata: Metadata = {
 
 export default async function DiaMundialPage() {
   const status = getEventWindowStatus(new Date());
+  const { registered } = await getCampaignAccess(DIA_MUNDIAL.campaign);
+  const showGallery = status === "open" && registered;
 
   // Solo se exponen los campos públicos: sin eventTitle ni fechas para no mostrar años.
   const recordings =
-    status === "open"
+    showGallery
       ? await prisma.recording.findMany({
           where: { active: true },
           select: {
@@ -45,12 +49,14 @@ export default async function DiaMundialPage() {
 
   return (
     <div className="bg-white">
-      <ParallaxHero status={status} />
+      <ParallaxHero status={status} registered={registered} />
       <AboutEvent />
-      {status === "open" ? (
+      {showGallery ? (
         <RecordingsGallery recordings={recordings} />
+      ) : status === "closed" ? (
+        <EventStatusNotice />
       ) : (
-        <EventStatusNotice status={status} />
+        <RegistrationSection status={status} registered={registered} />
       )}
       <EventCtas />
     </div>
