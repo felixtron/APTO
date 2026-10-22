@@ -74,3 +74,39 @@ export function getEventWindowStatus(
   if (today > config.endsOn) return "closed";
   return "open";
 }
+
+const MEXICO_CITY_OFFSET = "-06:00";
+const SECOND_MS = 1000;
+const MINUTE_MS = 60 * SECOND_MS;
+const HOUR_MS = 60 * MINUTE_MS;
+const DAY_MS = 24 * HOUR_MS;
+
+/** Instante en que se abre el acceso libre (00:00 del primer día, hora CDMX). */
+export function getEventOpensAt(config: EventWindowConfig = DIA_MUNDIAL): Date {
+  return new Date(`${config.startsOn}T00:00:00${MEXICO_CITY_OFFSET}`);
+}
+
+/** Instante en que termina el acceso libre (23:59:59 del último día, hora CDMX). */
+export function getEventClosesAt(config: EventWindowConfig = DIA_MUNDIAL): Date {
+  return new Date(`${config.endsOn}T23:59:59${MEXICO_CITY_OFFSET}`);
+}
+
+export interface CountdownParts {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+  /** true cuando el objetivo ya pasó. */
+  done: boolean;
+}
+
+export function getCountdownParts(now: Date, target: Date): CountdownParts {
+  const remaining = Math.max(target.getTime() - now.getTime(), 0);
+  return {
+    days: Math.floor(remaining / DAY_MS),
+    hours: Math.floor((remaining % DAY_MS) / HOUR_MS),
+    minutes: Math.floor((remaining % HOUR_MS) / MINUTE_MS),
+    seconds: Math.floor((remaining % MINUTE_MS) / SECOND_MS),
+    done: remaining === 0,
+  };
+}

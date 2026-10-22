@@ -2,6 +2,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   DIA_MUNDIAL,
   FORCE_STATUS_ENV,
+  getCountdownParts,
+  getEventClosesAt,
+  getEventOpensAt,
   getEventWindowStatus,
   toLocalIsoDate,
 } from "@/lib/dia-mundial";
@@ -62,5 +65,36 @@ describe("getEventWindowStatus", () => {
     expect(() =>
       getEventWindowStatus(new Date(), { startsOn: "27/10/2026", endsOn: "2026-10-31" }, undefined)
     ).toThrow(/YYYY-MM-DD/);
+  });
+});
+
+describe("countdown", () => {
+  it("opens at midnight Mexico City on the first day and closes at the end of the last", () => {
+    expect(getEventOpensAt(window).toISOString()).toBe("2026-10-27T06:00:00.000Z");
+    expect(getEventClosesAt(window).toISOString()).toBe("2026-11-01T05:59:59.000Z");
+  });
+
+  it("splits the remaining time into days, hours, minutes and seconds", () => {
+    const now = new Date("2026-10-22T04:00:00Z");
+    expect(getCountdownParts(now, getEventOpensAt(window))).toEqual({
+      days: 5,
+      hours: 2,
+      minutes: 0,
+      seconds: 0,
+      done: false,
+    });
+    expect(
+      getCountdownParts(new Date("2026-10-27T05:58:58Z"), getEventOpensAt(window))
+    ).toEqual({ days: 0, hours: 0, minutes: 1, seconds: 2, done: false });
+  });
+
+  it("clamps at zero once the target has passed", () => {
+    expect(getCountdownParts(new Date("2026-10-28T00:00:00Z"), getEventOpensAt(window))).toEqual({
+      days: 0,
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      done: true,
+    });
   });
 });

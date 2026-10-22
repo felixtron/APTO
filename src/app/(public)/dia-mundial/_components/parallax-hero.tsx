@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowRight, CheckCircle2, PlayCircle, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DIA_MUNDIAL, type EventWindowStatus } from "@/lib/dia-mundial";
+import { Countdown } from "./countdown";
 
 /** Fracción del scroll que recorre la imagen: menor = más lento que la página. */
 const PARALLAX_FACTOR = 0.2;
@@ -77,6 +78,8 @@ export function ParallaxHero({ status, registered }: ParallaxHeroProps) {
       {/* Franja de acción: evento conjunto y registro */}
       <div className="bg-gradient-to-b from-brand-800 to-brand-900">
         <div className="mx-auto flex max-w-3xl flex-col items-center gap-7 px-4 py-10 text-center sm:px-6 sm:py-12">
+          {status !== "closed" && <Countdown status={status} />}
+
           <div className="flex flex-col items-center gap-3">
             {canRegister ? (
               <>

@@ -10,7 +10,7 @@ const highlights = [
   {
     icon: CalendarDays,
     title: DIA_MUNDIAL.dateLabel,
-    text: "Durante cinco días abrimos de forma gratuita las conferencias, talleres y sesiones académicas que APTO ha reunido en sus jornadas y congresos.",
+    text: "Durante cinco días abrimos de forma gratuita las conferencias, talleres y sesiones académicas que APTO y COTEOC han reunido en sus jornadas y congresos.",
   },
   {
     icon: Users,
