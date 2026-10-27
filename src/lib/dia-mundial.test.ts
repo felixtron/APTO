@@ -2,10 +2,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   DIA_MUNDIAL,
   FORCE_STATUS_ENV,
+  OPEN_ACCESS_COPY,
   getCountdownParts,
   getEventClosesAt,
   getEventOpensAt,
   getEventWindowStatus,
+  openAccessSubtitle,
   toLocalIsoDate,
 } from "@/lib/dia-mundial";
 
@@ -96,5 +98,33 @@ describe("countdown", () => {
       seconds: 0,
       done: true,
     });
+  });
+});
+
+describe("open unregistered copy", () => {
+  it("invites visitors with the active recording count through the campaign end date", () => {
+    expect(openAccessSubtitle(65)).toBe(
+      "Regístrate gratis y mira las 65 grabaciones hasta el 31 de octubre"
+    );
+    expect(openAccessSubtitle(2, "2026-11-02")).toBe(
+      "Regístrate gratis y mira las 2 grabaciones hasta el 2 de noviembre"
+    );
+  });
+
+  it("uses the singular when only one recording is active", () => {
+    expect(openAccessSubtitle(1)).toBe(
+      "Regístrate gratis y mira la grabación hasta el 31 de octubre"
+    );
+  });
+
+  it("states that the library is already open", () => {
+    expect(OPEN_ACCESS_COPY.heroBadge).toBe("¡Ya está abierta!");
+    expect(OPEN_ACCESS_COPY.heroCta).toBe("Ver grabaciones gratis");
+    expect(OPEN_ACCESS_COPY.registrationTitle).toBe("Accede ahora a la biblioteca");
+    expect(OPEN_ACCESS_COPY.registrationBody).toBe(
+      "Solo tu nombre y correo, sin costo y sin membresía. Si ya te registraste, vuelve a escribir el mismo correo para entrar."
+    );
+    expect(OPEN_ACCESS_COPY.registrationSubmit).toBe("Ver grabaciones");
+    expect(DIA_MUNDIAL.dateLabel).toBe("Del 27 al 31 de octubre");
   });
 });

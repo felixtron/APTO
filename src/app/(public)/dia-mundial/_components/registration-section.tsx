@@ -2,12 +2,32 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Loader2, Lock } from "lucide-react";
+import { CheckCircle2, Loader2, Lock, Unlock } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DIA_MUNDIAL, type EventWindowStatus } from "@/lib/dia-mundial";
+import { DIA_MUNDIAL, OPEN_ACCESS_COPY, type EventWindowStatus } from "@/lib/dia-mundial";
+
+const GALLERY_ID = "grabaciones";
+const GALLERY_SCROLL_TIMEOUT_MS = 10_000;
+
+/** router.refresh() is not awaitable. Keep looking until the gallery replaces this section. */
+function scrollToGalleryWhenReady() {
+  const started = performance.now();
+  const tick = () => {
+    const gallery = document.getElementById(GALLERY_ID);
+    if (gallery) {
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      gallery.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+      return;
+    }
+    if (performance.now() - started < GALLERY_SCROLL_TIMEOUT_MS) {
+      window.requestAnimationFrame(tick);
+    }
+  };
+  window.requestAnimationFrame(tick);
+}
 
 interface RegistrationSectionProps {
   status: Exclude<EventWindowStatus, "closed">;
@@ -54,6 +74,7 @@ export function RegistrationSection({ status, registered }: RegistrationSectionP
             ? "Ya puedes ver las grabaciones."
             : "Te esperamos el 27 de octubre.",
       });
+      if (status === "open") scrollToGalleryWhenReady();
       router.refresh();
     } catch {
       const message = "Error de conexión. Inténtalo de nuevo.";
@@ -88,12 +109,19 @@ export function RegistrationSection({ status, registered }: RegistrationSectionP
             <>
               <div className="text-center">
                 <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50">
-                  <Lock className="h-7 w-7 text-brand-600" />
+                  {status === "open" ? (
+                    <Unlock className="h-7 w-7 text-brand-600" aria-hidden="true" />
+                  ) : (
+                    <Lock className="h-7 w-7 text-brand-600" aria-hidden="true" />
+                  )}
                 </div>
-                <h2 className="mt-5 text-2xl font-bold sm:text-3xl">Registro gratuito</h2>
+                <h2 className="mt-5 text-2xl font-bold sm:text-3xl">
+                  {status === "open" ? OPEN_ACCESS_COPY.registrationTitle : "Registro gratuito"}
+                </h2>
                 <p className="mt-3 text-lg text-muted-foreground">
-                  Sin costo y sin membresía. Solo necesitamos tu nombre y correo para darte
-                  acceso a las grabaciones {DIA_MUNDIAL.dateLabel.toLowerCase()}.
+                  {status === "open"
+                    ? OPEN_ACCESS_COPY.registrationBody
+                    : `Sin costo y sin membresía. Solo necesitamos tu nombre y correo para darte acceso a las grabaciones ${DIA_MUNDIAL.dateLabel.toLowerCase()}.`}
                 </p>
               </div>
 
@@ -169,6 +197,8 @@ export function RegistrationSection({ status, registered }: RegistrationSectionP
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Registrando...
                     </>
+                  ) : status === "open" ? (
+                    OPEN_ACCESS_COPY.registrationSubmit
                   ) : (
                     "Registrarme gratis"
                   )}

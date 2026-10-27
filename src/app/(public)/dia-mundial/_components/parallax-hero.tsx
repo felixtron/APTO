@@ -5,7 +5,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, PlayCircle, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DIA_MUNDIAL, type EventWindowStatus } from "@/lib/dia-mundial";
+import {
+  DIA_MUNDIAL,
+  OPEN_ACCESS_COPY,
+  openAccessSubtitle,
+  type EventWindowStatus,
+} from "@/lib/dia-mundial";
 import { Countdown } from "./countdown";
 
 /** Fracción del scroll que recorre la imagen: menor = más lento que la página. */
@@ -16,9 +21,11 @@ const BLEED_PERCENT = 8;
 interface ParallaxHeroProps {
   status: EventWindowStatus;
   registered: boolean;
+  /** Active recordings. Read only while the library is open and the visitor is not registered. */
+  recordingCount: number;
 }
 
-export function ParallaxHero({ status, registered }: ParallaxHeroProps) {
+export function ParallaxHero({ status, registered, recordingCount }: ParallaxHeroProps) {
   const frameRef = useRef<HTMLDivElement>(null);
   const layerRef = useRef<HTMLDivElement>(null);
 
@@ -81,7 +88,24 @@ export function ParallaxHero({ status, registered }: ParallaxHeroProps) {
           {status !== "closed" && <Countdown status={status} />}
 
           <div className="flex flex-col items-center gap-3">
-            {canRegister ? (
+            {status === "open" && !registered ? (
+              <>
+                <p className="inline-flex items-center rounded-full bg-green-500 px-5 py-2.5 text-lg font-bold text-white shadow-lg shadow-green-900/30 sm:text-xl">
+                  {OPEN_ACCESS_COPY.heroBadge}
+                </p>
+                <p className="max-w-md text-pretty text-base leading-snug text-blue-50 sm:max-w-lg sm:text-lg">
+                  {openAccessSubtitle(recordingCount)}
+                </p>
+                <a
+                  href="#registro"
+                  className="inline-flex w-full max-w-sm items-center justify-center gap-3 rounded-full bg-green-500 px-5 py-4 text-center text-base font-bold text-white shadow-2xl shadow-green-900/40 ring-4 ring-white/20 transition hover:bg-green-400 hover:ring-white/40 focus:outline-none focus-visible:ring-white sm:w-auto sm:max-w-none sm:px-10 sm:py-5 sm:text-xl"
+                >
+                  <PlayCircle className="h-6 w-6 shrink-0" />
+                  <span className="min-w-0 text-balance">{OPEN_ACCESS_COPY.heroCta}</span>
+                  <ArrowRight className="h-5 w-5 shrink-0" />
+                </a>
+              </>
+            ) : canRegister ? (
               <>
                 <a
                   href="#registro"

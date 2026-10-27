@@ -29,6 +29,10 @@ export default async function DiaMundialPage() {
   const status = getEventWindowStatus(new Date());
   const { registered } = await getCampaignAccess(DIA_MUNDIAL.campaign);
   const showGallery = status === "open" && registered;
+  const recordingCount =
+    status === "open" && !registered
+      ? await prisma.recording.count({ where: { active: true } })
+      : 0;
 
   // Solo se exponen los campos públicos: sin eventTitle ni fechas para no mostrar años.
   const recordings =
@@ -49,7 +53,11 @@ export default async function DiaMundialPage() {
 
   return (
     <div className="bg-white">
-      <ParallaxHero status={status} registered={registered} />
+      <ParallaxHero
+        status={status}
+        registered={registered}
+        recordingCount={recordingCount}
+      />
       <AboutEvent />
       {showGallery ? (
         <RecordingsGallery recordings={recordings} />
