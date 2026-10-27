@@ -29,6 +29,54 @@ export const DIA_MUNDIAL = {
 
 export type EventWindowStatus = "upcoming" | "open" | "closed";
 
+const SPANISH_MONTHS = [
+  "enero",
+  "febrero",
+  "marzo",
+  "abril",
+  "mayo",
+  "junio",
+  "julio",
+  "agosto",
+  "septiembre",
+  "octubre",
+  "noviembre",
+  "diciembre",
+] as const;
+
+/** Copy shown only while the library is open and the visitor has no access cookie. */
+export const OPEN_ACCESS_COPY = {
+  heroBadge: "¡Ya está abierta!",
+  heroCta: "Ver grabaciones gratis",
+  registrationTitle: "Accede ahora a la biblioteca",
+  registrationBody:
+    "Solo tu nombre y correo, sin costo y sin membresía. Si ya te registraste, vuelve a escribir el mismo correo para entrar.",
+  registrationSubmit: "Ver grabaciones",
+} as const;
+
+/** "31 de octubre" from a campaign ISO date. */
+function formatDayAndMonth(isoDate: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate);
+  const month = match ? SPANISH_MONTHS[Number(match[2]) - 1] : undefined;
+  const day = match ? Number(match[3]) : NaN;
+  if (!month || day < 1 || day > 31) {
+    throw new Error("DIA_MUNDIAL: la fecha de cierre debe tener formato YYYY-MM-DD");
+  }
+  return `${day} de ${month}`;
+}
+
+/** Subtitle under the open-state hero. The count is the number of active recordings. */
+export function openAccessSubtitle(
+  recordingCount: number,
+  endsOn: string = DIA_MUNDIAL.endsOn
+): string {
+  const until = formatDayAndMonth(endsOn);
+  if (recordingCount === 1) {
+    return `Regístrate gratis y mira la grabación hasta el ${until}`;
+  }
+  return `Regístrate gratis y mira las ${recordingCount} grabaciones hasta el ${until}`;
+}
+
 export interface EventWindowConfig {
   startsOn: string;
   endsOn: string;
