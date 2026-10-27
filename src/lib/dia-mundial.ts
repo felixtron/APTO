@@ -77,6 +77,11 @@ export function openAccessSubtitle(
   return `Regístrate gratis y mira las ${recordingCount} grabaciones hasta el ${until}`;
 }
 
+/** End date shown to someone who already has access while the library is open. */
+export function freeAccessUntilLabel(endsOn: string = DIA_MUNDIAL.endsOn): string {
+  return `Disponible gratis hasta el ${formatDayAndMonth(endsOn)}`;
+}
+
 export interface EventWindowConfig {
   startsOn: string;
   endsOn: string;

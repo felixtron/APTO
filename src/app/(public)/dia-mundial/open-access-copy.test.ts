@@ -22,9 +22,11 @@ describe("open unregistered page copy", () => {
 
     expect(hero).toContain(OPEN_ACCESS_COPY.heroBadge);
     expect(hero).toContain(openAccessSubtitle(65));
+    expect(hero).toContain("hasta el 31 de octubre");
     expect(hero).toContain(OPEN_ACCESS_COPY.heroCta);
     expect(hero).toContain('href="#registro"');
-    expect(hero).toContain("El acceso libre termina en");
+    expect(hero).not.toContain("El acceso libre termina en");
+    expect(hero).not.toContain('role="timer"');
     expect(hero).not.toContain("Registro gratuito");
 
     expect(form).toContain(OPEN_ACCESS_COPY.registrationTitle);
@@ -45,6 +47,7 @@ describe("open unregistered page copy", () => {
 
     expect(hero).toContain("Registro gratuito");
     expect(hero).toContain("Las grabaciones se abren en");
+    expect(hero).toContain('role="timer"');
     expect(hero).not.toContain(OPEN_ACCESS_COPY.heroBadge);
     expect(form).toContain("Registro gratuito");
     expect(form).toContain("Registrarme gratis");
@@ -61,9 +64,24 @@ describe("open unregistered page copy", () => {
     );
 
     expect(registered).toContain("Ya estás registrado");
+    expect(registered).toContain("Disponible gratis hasta el 31 de octubre");
+    expect(registered).not.toContain("El acceso libre termina en");
+    expect(registered).not.toContain('role="timer"');
     expect(registered).not.toContain(OPEN_ACCESS_COPY.heroBadge);
     expect(closed).toContain("Gracias por participar");
     expect(closed).not.toContain("El acceso libre termina en");
+    expect(closed).not.toContain('role="timer"');
     expect(closed).not.toContain(OPEN_ACCESS_COPY.heroBadge);
+  });
+
+  it("keeps the opening countdown for someone already registered before opening day", () => {
+    const hero = html(
+      createElement(ParallaxHero, { status: "upcoming", registered: true, recordingCount: 0 })
+    );
+
+    expect(hero).toContain("Las grabaciones se abren en");
+    expect(hero).toContain('role="timer"');
+    expect(hero).toContain("Ya estás registrado · Del 27 al 31 de octubre");
+    expect(hero).not.toContain("Disponible gratis hasta el 31 de octubre");
   });
 });
