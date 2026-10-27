@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { DIA_MUNDIAL, OPEN_ACCESS_COPY, type EventWindowStatus } from "@/lib/dia-mundial";
 
 const GALLERY_ID = "grabaciones";
-const GALLERY_SCROLL_TIMEOUT_MS = 5000;
+const GALLERY_SCROLL_TIMEOUT_MS = 10_000;
 
 /** router.refresh() is not awaitable. Keep looking until the gallery replaces this section. */
 function scrollToGalleryWhenReady() {
