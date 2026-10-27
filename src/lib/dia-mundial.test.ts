@@ -3,6 +3,7 @@ import {
   DIA_MUNDIAL,
   FORCE_STATUS_ENV,
   OPEN_ACCESS_COPY,
+  freeAccessUntilLabel,
   getCountdownParts,
   getEventClosesAt,
   getEventOpensAt,
@@ -126,5 +127,10 @@ describe("open unregistered copy", () => {
     );
     expect(OPEN_ACCESS_COPY.registrationSubmit).toBe("Ver grabaciones");
     expect(DIA_MUNDIAL.dateLabel).toBe("Del 27 al 31 de octubre");
+  });
+
+  it("states the free-access deadline for someone already registered", () => {
+    expect(freeAccessUntilLabel()).toBe("Disponible gratis hasta el 31 de octubre");
+    expect(freeAccessUntilLabel("2026-11-02")).toBe("Disponible gratis hasta el 2 de noviembre");
   });
 });

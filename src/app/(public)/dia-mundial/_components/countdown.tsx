@@ -1,19 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  getCountdownParts,
-  getEventClosesAt,
-  getEventOpensAt,
-  type CountdownParts,
-  type EventWindowStatus,
-} from "@/lib/dia-mundial";
-
-interface CountdownProps {
-  status: Exclude<EventWindowStatus, "closed">;
-}
+import { getCountdownParts, getEventOpensAt, type CountdownParts } from "@/lib/dia-mundial";
 
 const TICK_MS = 1000;
+const LABEL = "Las grabaciones se abren en";
 
 const UNITS: ReadonlyArray<{ key: keyof Omit<CountdownParts, "done">; label: string }> = [
   { key: "days", label: "días" },
@@ -22,31 +13,26 @@ const UNITS: ReadonlyArray<{ key: keyof Omit<CountdownParts, "done">; label: str
   { key: "seconds", label: "seg" },
 ];
 
-/** Cuenta regresiva a la apertura (antes del 27) o al cierre del acceso libre. */
-export function Countdown({ status }: CountdownProps) {
-  const target = status === "upcoming" ? getEventOpensAt() : getEventClosesAt();
+/** Cuenta regresiva a la apertura. Durante el acceso libre el hero no la muestra. */
+export function Countdown() {
   // null hasta montar: evita diferencias de hidratación entre servidor y cliente
   const [parts, setParts] = useState<CountdownParts | null>(null);
 
   useEffect(() => {
+    const target = getEventOpensAt();
     const tick = () => setParts(getCountdownParts(new Date(), target));
     tick();
     const id = window.setInterval(tick, TICK_MS);
     return () => window.clearInterval(id);
-    // target se recalcula igual en cada render; basta con el estado
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status]);
-
-  const label =
-    status === "upcoming" ? "Las grabaciones se abren en" : "El acceso libre termina en";
+  }, []);
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-100">{label}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-100">{LABEL}</p>
       <div
         role="timer"
         aria-live="off"
-        aria-label={parts ? `${parts.days} días, ${parts.hours} horas, ${parts.minutes} minutos` : label}
+        aria-label={parts ? `${parts.days} días, ${parts.hours} horas, ${parts.minutes} minutos` : LABEL}
         className="flex items-start justify-center gap-2 sm:gap-3"
       >
         {UNITS.map(({ key, label: unit }) => (

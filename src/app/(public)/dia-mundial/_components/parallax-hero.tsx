@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import {
   DIA_MUNDIAL,
   OPEN_ACCESS_COPY,
+  freeAccessUntilLabel,
   openAccessSubtitle,
   type EventWindowStatus,
 } from "@/lib/dia-mundial";
@@ -85,7 +86,7 @@ export function ParallaxHero({ status, registered, recordingCount }: ParallaxHer
       {/* Franja de acción: evento conjunto y registro */}
       <div className="bg-gradient-to-b from-brand-800 to-brand-900">
         <div className="mx-auto flex max-w-3xl flex-col items-center gap-7 px-4 py-10 text-center sm:px-6 sm:py-12">
-          {status !== "closed" && <Countdown status={status} />}
+          {status === "upcoming" && <Countdown />}
 
           <div className="flex flex-col items-center gap-3">
             {status === "open" && !registered ? (
@@ -119,6 +120,14 @@ export function ParallaxHero({ status, registered, recordingCount }: ParallaxHer
                   {DIA_MUNDIAL.dateLabel} · Sin costo y sin membresía
                 </p>
               </>
+            ) : status === "open" ? (
+              <div className="flex flex-col items-center gap-2">
+                <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-5 py-2 text-base font-medium backdrop-blur-sm">
+                  <CheckCircle2 className="h-5 w-5 text-green-300" />
+                  Ya estás registrado
+                </span>
+                <p className="text-base leading-snug text-blue-50 sm:text-lg">{freeAccessUntilLabel()}</p>
+              </div>
             ) : (
               <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-5 py-2 text-base font-medium backdrop-blur-sm">
                 <CheckCircle2 className="h-5 w-5 text-green-300" />
