@@ -41,7 +41,7 @@ export default async function NoticiasPage({
   const [posts, totalCount] = await Promise.all([
     prisma.post.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ featured: "desc" }, { createdAt: "desc" }, { id: "asc" }],
       skip: (page - 1) * PER_PAGE,
       take: PER_PAGE,
       select: {

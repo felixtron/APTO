@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowRight } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { pickHomepagePosts } from "@/lib/featured-posts";
 import { prisma } from "@/lib/prisma";
 
 const categoryColors: Record<string, string> = {
@@ -13,21 +14,35 @@ const categoryColors: Record<string, string> = {
   CLASIFICADOS: "bg-amber-50 text-amber-700",
 };
 
+const homepagePostSelect = {
+  id: true,
+  title: true,
+  slug: true,
+  excerpt: true,
+  category: true,
+  coverImage: true,
+  createdAt: true,
+} as const;
+
 export async function NewsPreview() {
-  const posts = await prisma.post.findMany({
-    where: { published: true },
-    orderBy: { createdAt: "desc" },
-    take: 4,
-    select: {
-      id: true,
-      title: true,
-      slug: true,
-      excerpt: true,
-      category: true,
-      coverImage: true,
-      createdAt: true,
-    },
-  });
+  // La principal es el publicado destacado más reciente. Las tarjetas de
+  // al lado siguen por fecha y no repiten esa noticia. Sin destacados, la
+  // principal vuelve a ser el publicado más reciente.
+  const [featuredPost, latestPosts] = await Promise.all([
+    prisma.post.findFirst({
+      where: { published: true, featured: true },
+      orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+      select: homepagePostSelect,
+    }),
+    prisma.post.findMany({
+      where: { published: true },
+      orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+      take: 4,
+      select: homepagePostSelect,
+    }),
+  ]);
+
+  const posts = pickHomepagePosts(featuredPost, latestPosts);
 
   if (posts.length === 0) {
     return (
