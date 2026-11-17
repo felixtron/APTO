@@ -258,7 +258,7 @@ export default function AdminNoticiasPage() {
                 <option value="CLASIFICADOS">Clasificados</option>
               </select>
             </div>
-            <div className="flex flex-wrap items-end gap-4 sm:gap-6">
+            <div className="flex flex-col gap-4 sm:col-span-2 sm:flex-row sm:items-start sm:gap-8">
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -270,17 +270,23 @@ export default function AdminNoticiasPage() {
                 />
                 <span className="text-sm">Publicado</span>
               </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={form.featured}
-                  onChange={(e) =>
-                    setForm({ ...form, featured: e.target.checked })
-                  }
-                  className="h-4 w-4 rounded border-gray-300"
-                />
-                <span className="text-sm">Destacado</span>
-              </label>
+              <div>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={form.featured}
+                    onChange={(e) =>
+                      setForm({ ...form, featured: e.target.checked })
+                    }
+                    className="h-4 w-4 rounded border-gray-300"
+                  />
+                  <span className="text-sm">Destacado</span>
+                </label>
+                <p className="mt-1 max-w-sm text-xs text-muted-foreground">
+                  Fija la noticia como principal en la portada cuando está
+                  publicada. Si hay varias, se muestra la más reciente.
+                </p>
+              </div>
             </div>
             <div className="sm:col-span-2 flex gap-2">
               <Button type="submit" disabled={saving}>
@@ -306,10 +312,15 @@ export default function AdminNoticiasPage() {
                 {post.published ? "Publicado" : "Borrador"}
               </Badge>
             </div>
-            <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <Badge variant="secondary" className="text-[10px]">
                 {categoryLabels[post.category] || post.category}
               </Badge>
+              {post.featured && (
+                <Badge className="bg-brand-50 text-[10px] text-brand-700">
+                  Destacado
+                </Badge>
+              )}
               <span>
                 {new Date(post.createdAt).toLocaleDateString("es-MX", {
                   day: "numeric", month: "short", year: "numeric",
@@ -357,15 +368,22 @@ export default function AdminNoticiasPage() {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Badge
-                    className={
-                      post.published
-                        ? "bg-green-100 text-green-800"
-                        : "bg-amber-100 text-amber-800"
-                    }
-                  >
-                    {post.published ? "Publicado" : "Borrador"}
-                  </Badge>
+                  <div className="flex flex-wrap gap-1">
+                    <Badge
+                      className={
+                        post.published
+                          ? "bg-green-100 text-green-800"
+                          : "bg-amber-100 text-amber-800"
+                      }
+                    >
+                      {post.published ? "Publicado" : "Borrador"}
+                    </Badge>
+                    {post.featured && (
+                      <Badge className="bg-brand-50 text-brand-700">
+                        Destacado
+                      </Badge>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
                   {new Date(post.createdAt).toLocaleDateString("es-MX", {
